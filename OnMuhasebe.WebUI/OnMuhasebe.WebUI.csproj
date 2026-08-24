@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\OnMuhasebe.Core\OnMuhasebe.Core.csproj" />
+    <ProjectReference Include="..\OnMuhasebe.Entities\OnMuhasebe.Entities.csproj" />
+    <ProjectReference Include="..\OnMuhasebe.Business\OnMuhasebe.Business.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

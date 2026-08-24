@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="OnMuhasebe.Business/OnMuhasebe.Business.csproj" />
+  <Project Path="OnMuhasebe.Core/OnMuhasebe.Core.csproj" />
+  <Project Path="OnMuhasebe.DataAccess/OnMuhasebe.DataAccess.csproj" />
+  <Project Path="OnMuhasebe.Entities/OnMuhasebe.Entities.csproj" />
+  <Project Path="OnMuhasebe.WebUI/OnMuhasebe.WebUI.csproj" />
+</Solution>
