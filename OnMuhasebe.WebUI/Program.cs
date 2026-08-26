@@ -1,7 +1,12 @@
+using OnMuhasebe.Business.DependencyInjection;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddBusinessServices(
+    builder.Configuration.GetConnectionString("OnMuhasebeDb")!);
 
 var app = builder.Build();
 
