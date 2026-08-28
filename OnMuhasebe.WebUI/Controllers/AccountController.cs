@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using OnMuhasebe.Business.Abstract;
 using System.Security.Claims;
 using OnMuhasebe.Entities.ViewModels;
+using OnMuhasebe.Business.Concrete;
+using OnMuhasebe.Entities.Tables;
 
 namespace OnMuhasebe.WebUI.Controllers;
 
@@ -36,7 +38,7 @@ public class AccountController : Controller
 
         if (kullanici == null)
         {
-            ModelState.AddModelError("KullaniciAdi", "Kullanıcı adı veya şifre hatalı");
+            ModelState.AddModelError("", "Kullanıcı adı veya şifre hatalı.");
             return View(model);
         }
 
@@ -61,5 +63,18 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+     
+        return RedirectToAction(nameof(Login));
+    }
+
+  
+    [AllowAnonymous]
+    public IActionResult Yetkisiz()
+    {
+        return View();
+    }
 }
