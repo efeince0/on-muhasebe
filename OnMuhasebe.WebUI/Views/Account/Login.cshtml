@@ -1,0 +1,50 @@
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Giriş";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-4">
+
+        <h3 class="mb-4">Giriş Yap</h3>
+
+        <form asp-controller="Account" asp-action="Login" method="post">
+
+            @* Genel hatalar burada çıkar — AddModelError("", ...) ile eklediklerin *@
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+
+            @* --- ALAN 1: Kullanıcı adı --- *@
+            <div class="mb-3">
+                <label asp-for="KullaniciAdi" class="form-label"></label>
+                <input asp-for="KullaniciAdi" class="form-control" />
+                <span asp-validation-for="KullaniciAdi" class="text-danger"></span>
+            </div>
+
+
+            <div class="mb-3">
+                <label asp-for="Sifre" class="form-label"></label>
+                <input asp-for="Sifre" class="form-control" />
+                <span asp-validation-for="Sifre" class="text-danger"></span>
+            </div>
+
+
+
+            <div class="form-check mb-3">
+                <input asp-for="BeniHatirla" class="form-check-input" />
+                <label asp-for="BeniHatirla" class="form-label"></label>
+            </div>
+
+
+            @* --- BUTON --- *@
+            <button type="submit" class="btn btn-primary w-100">Giriş</button>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

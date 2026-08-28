@@ -1,6 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OnMuhasebe.DataAccess.Context;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using OnMuhasebe.Business.Abstract;
+using OnMuhasebe.Business.Concrete;
+
 
 namespace OnMuhasebe.Business.DependencyInjection;
 
@@ -11,7 +15,21 @@ public static class ServiceRegistration
         string connectionString)
     {
         services.AddDbContext<OnMuhasebeContext>(options =>
-            options.UseSqlServer(connectionString));
+        options.UseSqlServer(connectionString));
+        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+      {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/Yetkisiz";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);   
+      });
+
+
+    services.AddScoped<IKimlikService, KimlikService>();
+
+
+
+
 
         // Servisler ileride buraya eklenecek:
         // services.AddScoped<ICariService, CariService>();

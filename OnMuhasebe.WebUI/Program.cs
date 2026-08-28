@@ -1,4 +1,5 @@
 using OnMuhasebe.Business.DependencyInjection;
+using OnMuhasebe.Business.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ builder.Services.AddBusinessServices(
     builder.Configuration.GetConnectionString("OnMuhasebeDb")!);
 
 var app = builder.Build();
+await app.Services.BaslangicVerisiEkleAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -20,7 +22,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
