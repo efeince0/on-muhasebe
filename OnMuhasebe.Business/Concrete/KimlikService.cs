@@ -18,7 +18,8 @@ public class KimlikService : IKimlikService
     public async Task<Kullanici?> GirisDogrulaAsync(string kullaniciAdi, string sifre)
     {
         var kullanici = await _context.Kullanicilar
-            .Include(kullanici=> kullanici.Rol)
+            .Include(k => k.Rol)                     // rolunu getir
+                .ThenInclude(r => r.Izinler)         // ve o rolun izin satirlarini
             .FirstOrDefaultAsync( k => 
             k.KullaniciAdi== kullaniciAdi
             && k.Aktif);

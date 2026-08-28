@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using OnMuhasebe.Business.Abstract;
 using System.Security.Claims;
 using OnMuhasebe.Entities.ViewModels;
+using OnMuhasebe.Core.Enums;
 using OnMuhasebe.Business.Concrete;
 using OnMuhasebe.Entities.Tables;
 
@@ -50,6 +51,14 @@ public class AccountController : Controller
             new(ClaimTypes.Role, kullanici.Rol.RolAdi)
 
         };
+
+        // Rolun izin satirlarini tek tek claim'e cevir.
+        // Ornek uretilen deger: "Cari.Ekle", "Stok.Goruntule"
+        // Boylece her istekte veritabanina gitmeden yetki sorgulanabilir.
+        foreach (var izin in kullanici.Rol.Izinler.Where(i => i.IzinVar && i.Aktif))
+        {
+            claims.Add(new Claim("Izin", $"{izin.Modul}.{izin.Islem}"));
+        }
 
         var kimlik = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(

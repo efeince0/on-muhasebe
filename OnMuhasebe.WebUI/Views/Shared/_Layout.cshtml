@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -24,18 +24,31 @@
                     @if (User.Identity!.IsAuthenticated)
                     {
                         <ul class="navbar-nav flex-grow-1">
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Cari" asp-action="Liste">Cariler</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Stok" asp-action="Liste">Stoklar</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Kullanici" asp-action="Liste">Kullanıcılar</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Fatura" asp-action="Liste">Faturalar</a>
-                            </li>
+                            @* Her menu ogesi, o modulu GORUNTULEME izni olana gosterilir. *@
+                            @if (User.IzniVar(Modul.Cari, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Cari" asp-action="Liste">Cariler</a>
+                                </li>
+                            }
+                            @if (User.IzniVar(Modul.Stok, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Stok" asp-action="Liste">Stoklar</a>
+                                </li>
+                            }
+                            @if (User.IzniVar(Modul.Fatura, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Fatura" asp-action="Liste">Faturalar</a>
+                                </li>
+                            }
+                            @if (User.IzniVar(Modul.Kullanici, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Kullanici" asp-action="Liste">Kullanıcılar</a>
+                                </li>
+                            }
                         </ul>
                         <ul class="navbar-nav">
                             <li class="nav-item">
@@ -66,7 +79,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - Ön Muhasebe - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2026 - Ön Muhasebe
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
