@@ -1,0 +1,104 @@
+@model CariFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Cari" : "Cari Güncelle";
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        @* Hangi kaydin guncellendigini tasir; kullaniciya gorunmez. *@
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "bu kod kullaniliyor"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label asp-for="CariKodu" class="form-label"></label>
+                <input asp-for="CariKodu" class="form-control" />
+                <span asp-validation-for="CariKodu" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Unvan" class="form-label"></label>
+                <input asp-for="Unvan" class="form-control" />
+                <span asp-validation-for="Unvan" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="CariTipi" class="form-label"></label>
+                <select asp-for="CariTipi" class="form-select"
+                        asp-items="Html.GetEnumSelectList<CariTipi>()">
+                    <option value="">Seçiniz</option>
+                </select>
+                <span asp-validation-for="CariTipi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="VergiDairesi" class="form-label"></label>
+                <input asp-for="VergiDairesi" class="form-control" />
+                <span asp-validation-for="VergiDairesi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="VergiNo" class="form-label"></label>
+                <input asp-for="VergiNo" class="form-control" />
+                <span asp-validation-for="VergiNo" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Telefon" class="form-label"></label>
+                <input asp-for="Telefon" class="form-control" />
+                <span asp-validation-for="Telefon" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Eposta" class="form-label"></label>
+                <input asp-for="Eposta" class="form-control" />
+                <span asp-validation-for="Eposta" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Adres" class="form-label"></label>
+                <textarea asp-for="Adres" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Adres" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="AcilisBakiye" class="form-label"></label>
+                <input asp-for="AcilisBakiye" class="form-control" />
+                <span asp-validation-for="AcilisBakiye" class="text-danger small"></span>
+            </div>
+
+            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+            @if (!yeniKayit)
+            {
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input asp-for="Aktif" class="form-check-input" />
+                        <label asp-for="Aktif" class="form-check-label"></label>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,25 +1,112 @@
 using Microsoft.AspNetCore.Mvc;
+using OnMuhasebe.Business.Abstract;
 using OnMuhasebe.Core.Enums;
+using OnMuhasebe.Entities.ViewModels;
 using OnMuhasebe.WebUI.Filters;
 
 namespace OnMuhasebe.WebUI.Controllers;
 
-// GECICI: Gun 5'te yazdigimiz YetkiAttribute'u test etmek icin.
-// Gun 6'da icini gercek cari islemleriyle dolduracagiz.
 public class CariController : Controller
 {
-    // Bu action'a girebilmek icin cookie'de "Cari.Goruntule" claim'i olmali.
-    [Yetki(Modul.Cari, Islem.Goruntule)]
-    public IActionResult Liste()
+    private readonly ICariService _cariService;
+
+    public CariController(ICariService cariService)
     {
-        return View();
+        _cariService = cariService;
     }
 
-    // Bu action'a girebilmek icin "Cari.Sil" claim'i olmali.
-    // Goruntuleyici rolunde bu izin YOK -> /Account/Yetkisiz sayfasina duser.
-    [Yetki(Modul.Cari, Islem.Sil)]
-    public IActionResult SilTest()
+    [Yetki(Modul.Cari, Islem.Goruntule)]
+    public async Task<IActionResult> Liste(string? arama, bool sadeceAktif = true)
     {
-        return Content("Silme yetkin var.");
+        var liste = await _cariService.ListeleAsync(arama, sadeceAktif);
+
+        // Arama formunun mevcut degerleri, sayfa yenilendiginde kaybolmasin.
+        ViewBag.Arama       = arama;
+        ViewBag.SadeceAktif = sadeceAktif;
+
+        return View(liste);
+    }
+
+    [HttpGet]
+    [Yetki(Modul.Cari, Islem.Ekle)]
+    public IActionResult Ekle()
+    {
+        // Ekleme ve guncelleme ayni view'i paylasir; Id = 0 "yeni kayit" demek.
+        return View("Form", new CariFormViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Yetki(Modul.Cari, Islem.Ekle)]
+    public async Task<IActionResult> Ekle(CariFormViewModel model)
+    {
+        return await KaydetVeYonlendir(model);
+    }
+
+    [HttpGet]
+    [Yetki(Modul.Cari, Islem.Guncelle)]
+    public async Task<IActionResult> Guncelle(int id)
+    {
+        var model = await _cariService.FormGetirAsync(id);
+        if (model == null)
+        {
+            TempData["Hata"] = "Kayıt bulunamadı.";
+            return RedirectToAction(nameof(Liste));
+        }
+
+        return View("Form", model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Yetki(Modul.Cari, Islem.Guncelle)]
+    public async Task<IActionResult> Guncelle(CariFormViewModel model)
+    {
+        return await KaydetVeYonlendir(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Yetki(Modul.Cari, Islem.Sil)]
+    public async Task<IActionResult> PasifeAl(int id)
+    {
+        var (basarili, hata) = await _cariService.PasifeAlAsync(id);
+
+        if (basarili) TempData["Basarili"] = "Cari pasife alındı.";
+        else          TempData["Hata"]     = hata;
+
+        return RedirectToAction(nameof(Liste));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Yetki(Modul.Cari, Islem.Guncelle)]
+    public async Task<IActionResult> AktifYap(int id)
+    {
+        var (basarili, hata) = await _cariService.AktifYapAsync(id);
+
+        if (basarili) TempData["Basarili"] = "Cari yeniden aktif edildi.";
+        else          TempData["Hata"]     = hata;
+
+        // Aktif edilen kaydin gorunmesi icin pasifler de listede kalsin.
+        return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
+    }
+
+    private async Task<IActionResult> KaydetVeYonlendir(CariFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View("Form", model);
+
+        var (basarili, hata) = await _cariService.KaydetAsync(model);
+
+        if (!basarili)
+        {
+            ModelState.AddModelError("", hata!);
+            return View("Form", model);
+        }
+
+        // POST -> Redirect -> GET: yenilemede kayit tekrar eklenmesin.
+        TempData["Basarili"] = model.Id == 0 ? "Cari eklendi." : "Cari güncellendi.";
+        return RedirectToAction(nameof(Liste));
     }
 }

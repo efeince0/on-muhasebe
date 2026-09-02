@@ -1,0 +1,6 @@
+﻿* text=auto
+*.cs text eol=crlf
+*.cshtml text eol=crlf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf

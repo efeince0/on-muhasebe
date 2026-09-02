@@ -25,16 +25,13 @@ public static class ServiceRegistration
       });
 
 
-    services.AddScoped<IKimlikService, KimlikService>();
+        // Servisler denetim alanlari icin aktif kullanici Id'sini buradan okur.
+        services.AddHttpContextAccessor();
+
+        services.AddScoped<IKimlikService, KimlikService>();
+        services.AddScoped<ICariService, CariService>();
 
 
-
-
-
-        // Servisler ileride buraya eklenecek:
-        // services.AddScoped<ICariService, CariService>();
-        // services.AddScoped<IStokService, StokService>();
-        // services.AddScoped<IFaturaService, FaturaService>();
 
         return services;
     }

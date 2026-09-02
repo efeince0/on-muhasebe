@@ -24,7 +24,7 @@
                     @if (User.Identity!.IsAuthenticated)
                     {
                         <ul class="navbar-nav flex-grow-1">
-                            @* Her menu ogesi, o modulu GORUNTULEME izni olana gosterilir. *@
+                            @* Menu gizleme yalnizca gorunurluk icindir; yetki kontrolu sunucuda yapilir. *@
                             @if (User.IzniVar(Modul.Cari, Islem.Goruntule))
                             {
                                 <li class="nav-item">

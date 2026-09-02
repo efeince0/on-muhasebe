@@ -5,8 +5,6 @@ using OnMuhasebe.WebUI.Models;
 
 namespace OnMuhasebe.WebUI.Controllers;
 
-// Sinif ustunde: icindeki TUM action'lari kapsar.
-// Giris yapmamis biri gelirse LoginPath'e yonlendirilir.
 [Authorize]
 public class HomeController : Controller
 {
@@ -15,8 +13,6 @@ public class HomeController : Controller
         return View();
     }
 
-    // Hata sayfasi korumasiz olmali - yoksa hata aninda
-    // login'e yonlendirme dongusune girebilir.
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

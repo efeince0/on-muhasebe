@@ -1,11 +1,112 @@
+@model List<CariListeViewModel>
+
 @{
     ViewData["Title"] = "Cariler";
+    var arama       = ViewBag.Arama as string;
+    var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
 }
 
-<h3 class="mb-4">Cariler</h3>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Cariler</h3>
 
-<p class="text-muted">Bu sayfayı görüyorsan <code>Cari.Goruntule</code> iznin var.</p>
+    @if (User.IzniVar(Modul.Cari, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni Cari</a>
+    }
+</div>
 
-<a asp-controller="Cari" asp-action="SilTest" class="btn btn-outline-danger">
-    Silme yetkimi test et
-</a>
+@* method="get": suzgec degerleri adres cubugunda kalir, sayfa paylasilabilir olur. *@
+<form asp-action="Liste" method="get" class="row g-2 mb-4">
+    <div class="col-md-5">
+        <input name="arama" value="@arama" class="form-control"
+               placeholder="Cari kodu veya ünvan ara..." />
+    </div>
+    <div class="col-md-3 d-flex align-items-center">
+        <div class="form-check">
+            @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+            <input type="hidden" name="sadeceAktif" value="false" />
+            <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+                   class="form-check-input" @(sadeceAktif ? "checked" : "") />
+            <label for="sadeceAktif" class="form-check-label">Sadece aktifler</label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Ara</button>
+    </div>
+    <div class="col-md-2">
+        <a asp-action="Liste" class="btn btn-outline-secondary w-100">Temizle</a>
+    </div>
+</form>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">Kayıt bulunamadı.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Kod</th>
+                    <th>Ünvan</th>
+                    <th>Tip</th>
+                    <th>Telefon</th>
+                    <th class="text-end">Güncel Bakiye</th>
+                    <th>Durum</th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var cari in Model)
+            {
+                <tr>
+                    <td><code>@cari.CariKodu</code></td>
+                    <td>@cari.Unvan</td>
+                    <td>@cari.CariTipi</td>
+                    <td>@cari.Telefon</td>
+                    <td class="text-end">@cari.GuncelBakiye.ToString("N2") ₺</td>
+                    <td>
+                        @if (cari.Aktif)
+                        {
+                            <span class="badge text-bg-success">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                        @if (User.IzniVar(Modul.Cari, Islem.Guncelle))
+                        {
+                            <a asp-action="Guncelle" asp-route-id="@cari.Id"
+                               class="btn btn-sm btn-outline-primary">Düzenle</a>
+                        }
+
+                        @if (cari.Aktif && User.IzniVar(Modul.Cari, Islem.Sil))
+                        {
+                            @* Link degil form: POST olsun ve antiforgery token tasinsin. *@
+                            <form asp-action="PasifeAl" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu cari pasife alınacak. Onaylıyor musunuz?');">
+                                <input type="hidden" name="id" value="@cari.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                            </form>
+                        }
+
+                        @if (!cari.Aktif && User.IzniVar(Modul.Cari, Islem.Guncelle))
+                        {
+                            <form asp-action="AktifYap" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@cari.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <p class="text-muted small">Toplam @Model.Count kayıt.</p>
+}

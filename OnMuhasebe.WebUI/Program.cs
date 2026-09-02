@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using OnMuhasebe.Business.DependencyInjection;
 using OnMuhasebe.Business.Seed;
 
@@ -19,6 +21,15 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+// Sayi ve tarih bicimleri sunucunun isletim sistemine gore degismesin.
+var kultur = new CultureInfo("tr-TR");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(kultur),
+    SupportedCultures     = [kultur],
+    SupportedUICultures   = [kultur]
+});
 
 app.UseHttpsRedirection();
 app.UseRouting();

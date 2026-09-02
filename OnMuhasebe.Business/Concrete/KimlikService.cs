@@ -18,23 +18,20 @@ public class KimlikService : IKimlikService
     public async Task<Kullanici?> GirisDogrulaAsync(string kullaniciAdi, string sifre)
     {
         var kullanici = await _context.Kullanicilar
-            .Include(k => k.Rol)                     // rolunu getir
-                .ThenInclude(r => r.Izinler)         // ve o rolun izin satirlarini
-            .FirstOrDefaultAsync( k => 
-            k.KullaniciAdi== kullaniciAdi
-            && k.Aktif);
-        if(kullanici==null)
-            return null;
-        
-        var sonuc = new PasswordHasher<Kullanici>()
-            .VerifyHashedPassword(
-                kullanici,
-                kullanici.SifreHash,
-                sifre);
-        if(sonuc== PasswordVerificationResult.Failed)
-            return null;
-        
-        return kullanici;
+            .Include(k => k.Rol)
+                .ThenInclude(r => r.Izinler)
+            .FirstOrDefaultAsync(k => k.KullaniciAdi == kullaniciAdi && k.Aktif);
 
+        if (kullanici == null)
+            return null;
+
+        var sonuc = new PasswordHasher<Kullanici>()
+            .VerifyHashedPassword(kullanici, kullanici.SifreHash, sifre);
+
+        // Kullanici yoksa da sifre yanlissa da ayni cevap doner.
+        if (sonuc == PasswordVerificationResult.Failed)
+            return null;
+
+        return kullanici;
     }
 }
