@@ -4,6 +4,12 @@
     ViewData["Title"] = "Cariler";
     var arama       = ViewBag.Arama as string;
     var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
+    var sirala      = ViewBag.Sirala as string ?? "kod";
+    var yon         = ViewBag.Yon as string ?? "asc";
+
+    // Bir kolona tiklandiginda: ayni kolonsa yonu ters cevir, farkliysa artan baslat.
+    Func<string, string> yeniYon = kolon => (sirala == kolon && yon == "asc") ? "desc" : "asc";
+    Func<string, string> ok      = kolon => sirala != kolon ? "" : (yon == "asc" ? " ▲" : " ▼");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -17,6 +23,10 @@
 
 @* method="get": suzgec degerleri adres cubugunda kalir, sayfa paylasilabilir olur. *@
 <form asp-action="Liste" method="get" class="row g-2 mb-4">
+    @* Arama yapilinca siralama tercihi kaybolmasin. *@
+    <input type="hidden" name="sirala" value="@sirala" />
+    <input type="hidden" name="yon" value="@yon" />
+
     <div class="col-md-5">
         <input name="arama" value="@arama" class="form-control"
                placeholder="Cari kodu veya ünvan ara..." />
@@ -40,7 +50,22 @@
 
 @if (Model.ToplamKayit == 0)
 {
-    <div class="alert alert-info">Kayıt bulunamadı.</div>
+    <div class="text-center border rounded py-5">
+        <p class="text-muted mb-3">
+            @if (string.IsNullOrWhiteSpace(arama))
+            {
+                <text>Henüz cari kaydı yok.</text>
+            }
+            else
+            {
+                <text>&laquo;@arama&raquo; aramasına uyan kayıt bulunamadı.</text>
+            }
+        </p>
+        @if (User.IzniVar(Modul.Cari, Islem.Ekle))
+        {
+            <a asp-action="Ekle" class="btn btn-primary">İlk cariyi ekle</a>
+        }
+    </div>
 }
 else
 {
@@ -48,11 +73,28 @@ else
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Kod</th>
-                    <th>Ünvan</th>
-                    <th>Tip</th>
+                    @* Baslik baglantilari suzgeci ve sayfayi tasir; siralama degisince 1. sayfaya doner. *@
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="kod" asp-route-yon="@yeniYon("kod")">Kod@(ok("kod"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="unvan" asp-route-yon="@yeniYon("unvan")">Ünvan@(ok("unvan"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="tip" asp-route-yon="@yeniYon("tip")">Tip@(ok("tip"))</a>
+                    </th>
                     <th>Telefon</th>
-                    <th class="text-end">Güncel Bakiye</th>
+                    <th class="text-end">
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="bakiye" asp-route-yon="@yeniYon("bakiye")">Güncel Bakiye@(ok("bakiye"))</a>
+                    </th>
                     <th>Durum</th>
                     <th class="text-end">İşlem</th>
                 </tr>
@@ -78,7 +120,7 @@ else
                             <span class="badge text-bg-secondary">Pasif</span>
                         }
                     </td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
                         <a asp-action="Detay" asp-route-id="@cari.Id"
                            class="btn btn-sm btn-outline-secondary">Detay</a>
 
@@ -113,7 +155,7 @@ else
         </table>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <p class="text-muted small mb-0">
             Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
         </p>
@@ -122,31 +164,28 @@ else
         {
             <nav>
                 <ul class="pagination pagination-sm mb-0">
-                    @* Suzgec degerleri her baglantida yeniden tasinmali, yoksa sayfa degisince sifirlanir. *@
+                    @* Suzgec ve siralama her baglantida yeniden tasinmali. *@
                     <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
-                        <a class="page-link"
-                           asp-action="Liste"
-                           asp-route-arama="@arama"
-                           asp-route-sadeceAktif="@sadeceAktif"
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
                            asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
                     </li>
 
                     @for (var s = 1; s <= Model.ToplamSayfa; s++)
                     {
                         <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
-                            <a class="page-link"
-                               asp-action="Liste"
-                               asp-route-arama="@arama"
-                               asp-route-sadeceAktif="@sadeceAktif"
+                            <a class="page-link" asp-action="Liste"
+                               asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                               asp-route-sirala="@sirala" asp-route-yon="@yon"
                                asp-route-sayfa="@s">@s</a>
                         </li>
                     }
 
                     <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
-                        <a class="page-link"
-                           asp-action="Liste"
-                           asp-route-arama="@arama"
-                           asp-route-sadeceAktif="@sadeceAktif"
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
                            asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
                     </li>
                 </ul>

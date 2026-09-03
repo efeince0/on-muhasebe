@@ -13,11 +13,29 @@
             <span class="badge text-bg-secondary ms-2">Pasif</span>
         }
     </div>
-    <div>
+    <div class="text-nowrap">
         @if (User.IzniVar(Modul.Cari, Islem.Guncelle))
         {
             <a asp-action="Guncelle" asp-route-id="@Model.Id" class="btn btn-outline-primary">Düzenle</a>
         }
+
+        @if (Model.Aktif && User.IzniVar(Modul.Cari, Islem.Sil))
+        {
+            <form asp-action="PasifeAl" method="post" class="d-inline"
+                  onsubmit="return confirm('Bu cari pasife alınacak. Onaylıyor musunuz?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-danger">Pasife Al</button>
+            </form>
+        }
+
+        @if (!Model.Aktif && User.IzniVar(Modul.Cari, Islem.Guncelle))
+        {
+            <form asp-action="AktifYap" method="post" class="d-inline">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-success">Aktif Et</button>
+            </form>
+        }
+
         <a asp-action="Liste" class="btn btn-outline-secondary">Listeye dön</a>
     </div>
 </div>

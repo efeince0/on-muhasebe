@@ -16,13 +16,17 @@ public class CariController : Controller
     }
 
     [Yetki(Modul.Cari, Islem.Goruntule)]
-    public async Task<IActionResult> Liste(string? arama, bool sadeceAktif = true, int sayfa = 1)
+    public async Task<IActionResult> Liste(
+        string? arama, bool sadeceAktif = true, int sayfa = 1,
+        string sirala = "kod", string yon = "asc")
     {
-        var liste = await _cariService.ListeleAsync(arama, sadeceAktif, sayfa);
+        var liste = await _cariService.ListeleAsync(arama, sadeceAktif, sayfa, 20, sirala, yon);
 
-        // Sayfa baglantilarinin suzgeci koruyabilmesi icin geri gonderiliyor.
+        // Sayfa ve siralama baglantilarinin suzgeci koruyabilmesi icin geri gonderiliyor.
         ViewBag.Arama       = arama;
         ViewBag.SadeceAktif = sadeceAktif;
+        ViewBag.Sirala      = sirala;
+        ViewBag.Yon         = yon;
 
         return View(liste);
     }
@@ -42,10 +46,14 @@ public class CariController : Controller
 
     [HttpGet]
     [Yetki(Modul.Cari, Islem.Ekle)]
-    public IActionResult Ekle()
+    public async Task<IActionResult> Ekle()
     {
         // Ekleme ve guncelleme ayni view'i paylasir; Id = 0 "yeni kayit" demek.
-        return View("Form", new CariFormViewModel());
+        // Kod yalnizca oneri; kullanici degistirebilir, benzersizlik yine serviste kontrol edilir.
+        return View("Form", new CariFormViewModel
+        {
+            CariKodu = await _cariService.SonrakiKodOnerAsync()
+        });
     }
 
     [HttpPost]

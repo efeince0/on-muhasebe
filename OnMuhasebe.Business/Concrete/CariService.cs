@@ -24,7 +24,9 @@ public class CariService : ICariService
     }
 
     public async Task<SayfaliListe<CariListeViewModel>> ListeleAsync(
-        string? arama = null, bool sadeceAktif = true, int sayfaNo = 1, int sayfaBoyutu = 20)
+        string? arama = null, bool sadeceAktif = true,
+        int sayfaNo = 1, int sayfaBoyutu = 20,
+        string sirala = "kod", string yon = "asc")
     {
         // Adres cubugundan gelen degerler guvenilmez; sinirlara cekiyoruz.
         if (sayfaNo < 1) sayfaNo = 1;
@@ -47,29 +49,29 @@ public class CariService : ICariService
         var toplamSayfa = toplam == 0 ? 1 : (int)Math.Ceiling(toplam / (double)sayfaBoyutu);
         if (sayfaNo > toplamSayfa) sayfaNo = toplamSayfa;
 
-        var kayitlar = await sorgu
-            .OrderBy(c => c.CariKodu)
+        var projeksiyon = sorgu.Select(c => new CariListeViewModel
+        {
+            Id       = c.Id,
+            CariKodu = c.CariKodu,
+            Unvan    = c.Unvan,
+            CariTipi = c.CariTipi,
+            Telefon  = c.Telefon,
+            Aktif    = c.Aktif,
+
+            // Borc ve Odeme bakiyeyi artirir, Alacak ve Tahsilat azaltir.
+            GuncelBakiye =
+                  c.AcilisBakiye
+                + c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
+                    .Sum(i => i.Tutar)
+                - c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
+                    .Sum(i => i.Tutar)
+        });
+
+        var kayitlar = await SiralamaUygula(projeksiyon, sirala, yon)
             .Skip((sayfaNo - 1) * sayfaBoyutu)
             .Take(sayfaBoyutu)
-            .Select(c => new CariListeViewModel
-            {
-                Id       = c.Id,
-                CariKodu = c.CariKodu,
-                Unvan    = c.Unvan,
-                CariTipi = c.CariTipi,
-                Telefon  = c.Telefon,
-                Aktif    = c.Aktif,
-
-                // Borc ve Odeme bakiyeyi artirir, Alacak ve Tahsilat azaltir.
-                GuncelBakiye =
-                      c.AcilisBakiye
-                    + c.CariIslemler
-                        .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
-                        .Sum(i => i.Tutar)
-                    - c.CariIslemler
-                        .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
-                        .Sum(i => i.Tutar)
-            })
             .ToListAsync();
 
         return new SayfaliListe<CariListeViewModel>
@@ -79,6 +81,48 @@ public class CariService : ICariService
             SayfaNo     = sayfaNo,
             SayfaBoyutu = sayfaBoyutu
         };
+    }
+
+    /// <summary>
+    /// Siralama adres cubugundan geliyor; bilinmeyen deger varsayilana duser.
+    /// Kolon adini dogrudan sorguya gecirmek yerine beyaz liste kullaniyoruz.
+    /// </summary>
+    private static IQueryable<CariListeViewModel> SiralamaUygula(
+        IQueryable<CariListeViewModel> sorgu, string sirala, string yon)
+    {
+        var azalan = yon == "desc";
+
+        return (sirala, azalan) switch
+        {
+            ("unvan",  true)  => sorgu.OrderByDescending(x => x.Unvan),
+            ("unvan",  false) => sorgu.OrderBy(x => x.Unvan),
+            ("bakiye", true)  => sorgu.OrderByDescending(x => x.GuncelBakiye),
+            ("bakiye", false) => sorgu.OrderBy(x => x.GuncelBakiye),
+            ("tip",    true)  => sorgu.OrderByDescending(x => x.CariTipi),
+            ("tip",    false) => sorgu.OrderBy(x => x.CariTipi),
+            (_,        true)  => sorgu.OrderByDescending(x => x.CariKodu),
+            _                 => sorgu.OrderBy(x => x.CariKodu)
+        };
+    }
+
+    public async Task<string> SonrakiKodOnerAsync(string onEk = "C")
+    {
+        var kodlar = await _context.Cariler
+            .AsNoTracking()
+            .Where(c => c.CariKodu.StartsWith(onEk))
+            .Select(c => c.CariKodu)
+            .ToListAsync();
+
+        // "C0007" -> "0007" -> 7. Sayi olmayanlar (ornegin "CARI-X") elenir.
+        var enBuyuk = kodlar
+            .Select(k => k[onEk.Length..])
+            .Where(son => son.Length > 0 && son.All(char.IsDigit))
+            .Select(int.Parse)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        // D4: dort haneye tamamla -> 8 olur "0008"
+        return $"{onEk}{enBuyuk + 1:D4}";
     }
 
     public async Task<CariFormViewModel?> FormGetirAsync(int id)
