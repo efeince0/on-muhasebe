@@ -4,7 +4,7 @@ namespace OnMuhasebe.Business.Abstract;
 
 public interface IKimlikService
 {
-    //dorguysa kullanıcı döner , yanlışsa null
+    /// <summary>Doğruysa kullanıcıyı döner, kullanıcı yoksa veya şifre yanlışsa null.</summary>
     Task<Kullanici?> GirisDogrulaAsync(string kullaniciAdi, string sifre);
     
 }

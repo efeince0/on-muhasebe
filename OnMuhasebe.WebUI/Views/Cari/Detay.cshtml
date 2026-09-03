@@ -1,0 +1,124 @@
+@model CariDetayViewModel
+
+@{
+    ViewData["Title"] = Model.Unvan;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h3 class="mb-1">@Model.Unvan</h3>
+        <span class="text-muted"><code>@Model.CariKodu</code> · @Model.CariTipi</span>
+        @if (!Model.Aktif)
+        {
+            <span class="badge text-bg-secondary ms-2">Pasif</span>
+        }
+    </div>
+    <div>
+        @if (User.IzniVar(Modul.Cari, Islem.Guncelle))
+        {
+            <a asp-action="Guncelle" asp-route-id="@Model.Id" class="btn btn-outline-primary">Düzenle</a>
+        }
+        <a asp-action="Liste" class="btn btn-outline-secondary">Listeye dön</a>
+    </div>
+</div>
+
+@* --- BAKİYE ÖZETİ --- *@
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Açılış Bakiyesi</div>
+            <div class="fs-5">@Model.AcilisBakiye.ToString("N2") ₺</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Toplam Borç</div>
+            <div class="fs-5 text-danger">@Model.ToplamBorc.ToString("N2") ₺</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Toplam Alacak</div>
+            <div class="fs-5 text-success">@Model.ToplamAlacak.ToString("N2") ₺</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100 bg-light">
+            <div class="text-muted small">Güncel Bakiye</div>
+            <div class="fs-4 fw-semibold">@Model.GuncelBakiye.ToString("N2") ₺</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @* --- KART BİLGİLERİ --- *@
+    <div class="col-lg-5">
+        <h5 class="mb-3">Kart Bilgileri</h5>
+        <table class="table table-sm">
+            <tr><th class="text-muted fw-normal" style="width:40%">Vergi Dairesi</th><td>@(Model.VergiDairesi ?? "—")</td></tr>
+            <tr><th class="text-muted fw-normal">Vergi No</th><td>@(Model.VergiNo ?? "—")</td></tr>
+            <tr><th class="text-muted fw-normal">Telefon</th><td>@(Model.Telefon ?? "—")</td></tr>
+            <tr><th class="text-muted fw-normal">E-posta</th><td>@(Model.Eposta ?? "—")</td></tr>
+            <tr><th class="text-muted fw-normal">Adres</th><td>@(Model.Adres ?? "—")</td></tr>
+            <tr><th class="text-muted fw-normal">Kayıt</th><td>@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</td></tr>
+            <tr>
+                <th class="text-muted fw-normal">Son güncelleme</th>
+                <td>@(Model.GuncellemeTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+            </tr>
+        </table>
+    </div>
+
+    @* --- SON HAREKETLER --- *@
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-baseline mb-3">
+            <h5 class="mb-0">Son Hareketler</h5>
+            <span class="text-muted small">Toplam @Model.HareketSayisi hareket</span>
+        </div>
+
+        @if (Model.SonHareketler.Count == 0)
+        {
+            <div class="alert alert-light border">
+                Bu cariye ait hareket yok. Hareketler fatura kesildiğinde veya
+                tahsilat/ödeme girildiğinde otomatik oluşur.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tarih</th>
+                            <th>İşlem No</th>
+                            <th>Tip</th>
+                            <th class="text-end">Tutar</th>
+                            <th>Kaynak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var hareket in Model.SonHareketler)
+                    {
+                        <tr>
+                            <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
+                            <td><code>@hareket.IslemNo</code></td>
+                            <td>@hareket.IslemTipi</td>
+                            <td class="text-end">@hareket.Tutar.ToString("N2") ₺</td>
+                            <td>
+                                @if (hareket.FaturadanMi)
+                                {
+                                    <span class="badge text-bg-info">Fatura</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-light text-dark">Elle</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

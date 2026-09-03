@@ -4,16 +4,21 @@ namespace OnMuhasebe.Business.Abstract;
 
 public interface ICariService
 {
-    Task<List<CariListeViewModel>> ListeleAsync(string? arama = null, bool sadeceAktif = true);
+    /// <summary>Liste ekrani icin sayfalanmis sonuc.</summary>
+    Task<SayfaliListe<CariListeViewModel>> ListeleAsync(
+        string? arama = null, bool sadeceAktif = true, int sayfaNo = 1, int sayfaBoyutu = 20);
 
-    //Guncelleme formunu doldurmak icin. Bulunamazsa null
+    /// <summary>Guncelleme formunu doldurmak icin. Bulunamazsa null.</summary>
     Task<CariFormViewModel?> FormGetirAsync(int id);
 
+    /// <summary>Detay ekrani: kart bilgileri, bakiye ozeti ve son hareketler.</summary>
+    Task<CariDetayViewModel?> DetayGetirAsync(int id, int sonHareketSayisi = 10);
+
+    /// <summary>Id = 0 ise ekler, degilse gunceller.</summary>
     Task<(bool Basarili, string? Hata)> KaydetAsync(CariFormViewModel model);
 
-    //Kalici silmez; Aktif = false 
+    /// <summary>Kalici silmez; Aktif = false yapar. Bakiyesi sifir degilse reddeder.</summary>
     Task<(bool Basarili, string? Hata)> PasifeAlAsync(int id);
 
-    //Pasif kaydi geri acar
     Task<(bool Basarili, string? Hata)> AktifYapAsync(int id);
 }

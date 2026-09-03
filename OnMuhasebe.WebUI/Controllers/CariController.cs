@@ -16,15 +16,28 @@ public class CariController : Controller
     }
 
     [Yetki(Modul.Cari, Islem.Goruntule)]
-    public async Task<IActionResult> Liste(string? arama, bool sadeceAktif = true)
+    public async Task<IActionResult> Liste(string? arama, bool sadeceAktif = true, int sayfa = 1)
     {
-        var liste = await _cariService.ListeleAsync(arama, sadeceAktif);
+        var liste = await _cariService.ListeleAsync(arama, sadeceAktif, sayfa);
 
-        // Arama formunun mevcut degerleri, sayfa yenilendiginde kaybolmasin.
+        // Sayfa baglantilarinin suzgeci koruyabilmesi icin geri gonderiliyor.
         ViewBag.Arama       = arama;
         ViewBag.SadeceAktif = sadeceAktif;
 
         return View(liste);
+    }
+
+    [Yetki(Modul.Cari, Islem.Goruntule)]
+    public async Task<IActionResult> Detay(int id)
+    {
+        var model = await _cariService.DetayGetirAsync(id);
+        if (model == null)
+        {
+            TempData["Hata"] = "Kayıt bulunamadı.";
+            return RedirectToAction(nameof(Liste));
+        }
+
+        return View(model);
     }
 
     [HttpGet]

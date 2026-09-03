@@ -23,8 +23,13 @@ public class CariService : ICariService
             _context.AktifKullaniciId = kullaniciId;
     }
 
-    public async Task<List<CariListeViewModel>> ListeleAsync(string? arama = null, bool sadeceAktif = true)
+    public async Task<SayfaliListe<CariListeViewModel>> ListeleAsync(
+        string? arama = null, bool sadeceAktif = true, int sayfaNo = 1, int sayfaBoyutu = 20)
     {
+        // Adres cubugundan gelen degerler guvenilmez; sinirlara cekiyoruz.
+        if (sayfaNo < 1) sayfaNo = 1;
+        if (sayfaBoyutu is < 5 or > 200) sayfaBoyutu = 20;
+
         var sorgu = _context.Cariler.AsNoTracking().AsQueryable();
 
         if (sadeceAktif)
@@ -36,8 +41,16 @@ public class CariService : ICariService
             sorgu = sorgu.Where(c => c.CariKodu.Contains(a) || c.Unvan.Contains(a));
         }
 
-        return await sorgu
+        var toplam = await sorgu.CountAsync();
+
+        // Son sayfadaki tek kayit silinince bos sayfada kalinmasin.
+        var toplamSayfa = toplam == 0 ? 1 : (int)Math.Ceiling(toplam / (double)sayfaBoyutu);
+        if (sayfaNo > toplamSayfa) sayfaNo = toplamSayfa;
+
+        var kayitlar = await sorgu
             .OrderBy(c => c.CariKodu)
+            .Skip((sayfaNo - 1) * sayfaBoyutu)
+            .Take(sayfaBoyutu)
             .Select(c => new CariListeViewModel
             {
                 Id       = c.Id,
@@ -58,6 +71,14 @@ public class CariService : ICariService
                         .Sum(i => i.Tutar)
             })
             .ToListAsync();
+
+        return new SayfaliListe<CariListeViewModel>
+        {
+            Kayitlar    = kayitlar,
+            ToplamKayit = toplam,
+            SayfaNo     = sayfaNo,
+            SayfaBoyutu = sayfaBoyutu
+        };
     }
 
     public async Task<CariFormViewModel?> FormGetirAsync(int id)
@@ -78,6 +99,57 @@ public class CariService : ICariService
                 Adres        = c.Adres,
                 AcilisBakiye = c.AcilisBakiye,
                 Aktif        = c.Aktif
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<CariDetayViewModel?> DetayGetirAsync(int id, int sonHareketSayisi = 10)
+    {
+        return await _context.Cariler
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => new CariDetayViewModel
+            {
+                Id           = c.Id,
+                CariKodu     = c.CariKodu,
+                Unvan        = c.Unvan,
+                CariTipi     = c.CariTipi,
+                VergiDairesi = c.VergiDairesi,
+                VergiNo      = c.VergiNo,
+                Telefon      = c.Telefon,
+                Eposta       = c.Eposta,
+                Adres        = c.Adres,
+                Aktif        = c.Aktif,
+
+                AcilisBakiye = c.AcilisBakiye,
+                ToplamBorc   = c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
+                    .Sum(i => i.Tutar),
+                ToplamAlacak = c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
+                    .Sum(i => i.Tutar),
+
+                HareketSayisi = c.CariIslemler.Count(i => i.Aktif),
+
+                SonHareketler = c.CariIslemler
+                    .Where(i => i.Aktif)
+                    .OrderByDescending(i => i.Tarih).ThenByDescending(i => i.Id)
+                    .Take(sonHareketSayisi)
+                    .Select(i => new CariHareketSatirViewModel
+                    {
+                        Id          = i.Id,
+                        IslemNo     = i.IslemNo,
+                        Tarih       = i.Tarih,
+                        IslemTipi   = i.IslemTipi,
+                        Tutar       = i.Tutar,
+                        OdemeSekli  = i.OdemeSekli,
+                        Aciklama    = i.Aciklama,
+                        FaturadanMi = i.FaturaId != null
+                    })
+                    .ToList(),
+
+                OlusturmaTarihi  = c.OlusturmaTarihi,
+                GuncellemeTarihi = c.GuncellemeTarihi
             })
             .FirstOrDefaultAsync();
     }
@@ -137,6 +209,11 @@ public class CariService : ICariService
         if (!cari.Aktif)
             return (false, "Kayıt zaten pasif durumda.");
 
+        // Muhasebe kurali: acik bakiyesi olan hesap kapatilamaz.
+        var bakiye = await BakiyeHesaplaAsync(id);
+        if (bakiye != 0)
+            return (false, $"Bakiyesi sıfır olmayan cari pasife alınamaz. Güncel bakiye: {bakiye:N2} ₺");
+
         // Kayitlar kalici silinmez; gecmis hareketlerin bagli oldugu cari korunur.
         cari.Aktif = false;
         await _context.SaveChangesAsync();
@@ -152,5 +229,21 @@ public class CariService : ICariService
         cari.Aktif = true;
         await _context.SaveChangesAsync();
         return (true, null);
+    }
+
+    private async Task<decimal> BakiyeHesaplaAsync(int cariId)
+    {
+        return await _context.Cariler
+            .AsNoTracking()
+            .Where(c => c.Id == cariId)
+            .Select(c =>
+                  c.AcilisBakiye
+                + c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
+                    .Sum(i => i.Tutar)
+                - c.CariIslemler
+                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
+                    .Sum(i => i.Tutar))
+            .FirstAsync();
     }
 }

@@ -11,11 +11,10 @@
 
         <form asp-controller="Account" asp-action="Login" method="post">
 
-            @* Genel hatalar burada çıkar — AddModelError("", ...) ile eklediklerin *@
+            @* Servisten gelen genel hatalar burada çıkar. *@
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
 
-            @* --- ALAN 1: Kullanıcı adı --- *@
             <div class="mb-3">
                 <label asp-for="KullaniciAdi" class="form-label"></label>
                 <input asp-for="KullaniciAdi" class="form-control" />
@@ -37,7 +36,6 @@
             </div>
 
 
-            @* --- BUTON --- *@
             <button type="submit" class="btn btn-primary w-100">Giriş</button>
 
         </form>

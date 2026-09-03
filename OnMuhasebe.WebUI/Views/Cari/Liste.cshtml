@@ -1,4 +1,4 @@
-@model List<CariListeViewModel>
+@model SayfaliListe<CariListeViewModel>
 
 @{
     ViewData["Title"] = "Cariler";
@@ -38,7 +38,7 @@
     </div>
 </form>
 
-@if (Model.Count == 0)
+@if (Model.ToplamKayit == 0)
 {
     <div class="alert alert-info">Kayıt bulunamadı.</div>
 }
@@ -58,11 +58,13 @@ else
                 </tr>
             </thead>
             <tbody>
-            @foreach (var cari in Model)
+            @foreach (var cari in Model.Kayitlar)
             {
                 <tr>
                     <td><code>@cari.CariKodu</code></td>
-                    <td>@cari.Unvan</td>
+                    <td>
+                        <a asp-action="Detay" asp-route-id="@cari.Id" class="text-decoration-none">@cari.Unvan</a>
+                    </td>
                     <td>@cari.CariTipi</td>
                     <td>@cari.Telefon</td>
                     <td class="text-end">@cari.GuncelBakiye.ToString("N2") ₺</td>
@@ -77,6 +79,9 @@ else
                         }
                     </td>
                     <td class="text-end">
+                        <a asp-action="Detay" asp-route-id="@cari.Id"
+                           class="btn btn-sm btn-outline-secondary">Detay</a>
+
                         @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
                         @if (User.IzniVar(Modul.Cari, Islem.Guncelle))
                         {
@@ -108,5 +113,44 @@ else
         </table>
     </div>
 
-    <p class="text-muted small">Toplam @Model.Count kayıt.</p>
+    <div class="d-flex justify-content-between align-items-center">
+        <p class="text-muted small mb-0">
+            Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+        </p>
+
+        @if (Model.ToplamSayfa > 1)
+        {
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @* Suzgec degerleri her baglantida yeniden tasinmali, yoksa sayfa degisince sifirlanir. *@
+                    <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
+                        <a class="page-link"
+                           asp-action="Liste"
+                           asp-route-arama="@arama"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
+                    </li>
+
+                    @for (var s = 1; s <= Model.ToplamSayfa; s++)
+                    {
+                        <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Liste"
+                               asp-route-arama="@arama"
+                               asp-route-sadeceAktif="@sadeceAktif"
+                               asp-route-sayfa="@s">@s</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
+                        <a class="page-link"
+                           asp-action="Liste"
+                           asp-route-arama="@arama"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
 }
