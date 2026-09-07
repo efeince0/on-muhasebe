@@ -30,6 +30,7 @@ public static class ServiceRegistration
 
         services.AddScoped<IKimlikService, KimlikService>();
         services.AddScoped<ICariService, CariService>();
+        services.AddScoped<IStokService, StokService>();
 
 
 

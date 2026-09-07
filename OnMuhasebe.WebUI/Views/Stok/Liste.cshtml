@@ -1,0 +1,207 @@
+@model SayfaliListe<StokListeViewModel>
+
+@{
+    ViewData["Title"] = "Stoklar";
+    var arama        = ViewBag.Arama as string;
+    var sadeceAktif  = ViewBag.SadeceAktif as bool? ?? true;
+    var sadeceKritik = ViewBag.SadeceKritik as bool? ?? false;
+    var sirala       = ViewBag.Sirala as string ?? "kod";
+    var yon          = ViewBag.Yon as string ?? "asc";
+
+    Func<string, string> yeniYon = kolon => (sirala == kolon && yon == "asc") ? "desc" : "asc";
+    Func<string, string> ok      = kolon => sirala != kolon ? "" : (yon == "asc" ? " ▲" : " ▼");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Stoklar</h3>
+
+    @if (User.IzniVar(Modul.Stok, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni Stok</a>
+    }
+</div>
+
+<form asp-action="Liste" method="get" class="row g-2 mb-4">
+    <input type="hidden" name="sirala" value="@sirala" />
+    <input type="hidden" name="yon" value="@yon" />
+
+    <div class="col-md-4">
+        <input name="arama" value="@arama" class="form-control"
+               placeholder="Kod, ad veya kategori ara..." />
+    </div>
+    <div class="col-md-2 d-flex align-items-center">
+        <div class="form-check">
+            @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+            <input type="hidden" name="sadeceAktif" value="false" />
+            <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+                   class="form-check-input" @(sadeceAktif ? "checked" : "") />
+            <label for="sadeceAktif" class="form-check-label">Aktifler</label>
+        </div>
+    </div>
+    <div class="col-md-2 d-flex align-items-center">
+        <div class="form-check">
+            <input type="hidden" name="sadeceKritik" value="false" />
+            <input type="checkbox" name="sadeceKritik" value="true" id="sadeceKritik"
+                   class="form-check-input" @(sadeceKritik ? "checked" : "") />
+            <label for="sadeceKritik" class="form-check-label text-danger">Kritik seviye</label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Ara</button>
+    </div>
+    <div class="col-md-2">
+        <a asp-action="Liste" class="btn btn-outline-secondary w-100">Temizle</a>
+    </div>
+</form>
+
+@if (Model.ToplamKayit == 0)
+{
+    <div class="text-center border rounded py-5">
+        <p class="text-muted mb-3">
+            @if (sadeceKritik)
+            {
+                <text>Kritik seviyenin altında stok yok.</text>
+            }
+            else if (string.IsNullOrWhiteSpace(arama))
+            {
+                <text>Henüz stok kartı yok.</text>
+            }
+            else
+            {
+                <text>&laquo;@arama&raquo; aramasına uyan kayıt bulunamadı.</text>
+            }
+        </p>
+        @if (!sadeceKritik && User.IzniVar(Modul.Stok, Islem.Ekle))
+        {
+            <a asp-action="Ekle" class="btn btn-primary">İlk stok kartını ekle</a>
+        }
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="kod" asp-route-yon="@yeniYon("kod")">Kod@(ok("kod"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="ad" asp-route-yon="@yeniYon("ad")">Stok Adı@(ok("ad"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="kategori" asp-route-yon="@yeniYon("kategori")">Kategori@(ok("kategori"))</a>
+                    </th>
+                    <th class="text-end">
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="miktar" asp-route-yon="@yeniYon("miktar")">Mevcut@(ok("miktar"))</a>
+                    </th>
+                    <th class="text-end">
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="fiyat" asp-route-yon="@yeniYon("fiyat")">Satış Fiyatı@(ok("fiyat"))</a>
+                    </th>
+                    <th>Durum</th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var stok in Model.Kayitlar)
+            {
+                <tr>
+                    <td><code>@stok.StokKodu</code></td>
+                    <td>@stok.StokAdi</td>
+                    <td>@(stok.Kategori ?? "—")</td>
+                    <td class="text-end @(stok.KritikSeviyede ? "text-danger fw-semibold" : "")">
+                        @stok.MevcutMiktar.ToString("N3") @stok.Birim
+                        @if (stok.KritikSeviyede)
+                        {
+                            <span class="badge text-bg-danger ms-1">Kritik</span>
+                        }
+                    </td>
+                    <td class="text-end">@stok.SatisFiyati.ToString("N2") ₺</td>
+                    <td>
+                        @if (stok.Aktif)
+                        {
+                            <span class="badge text-bg-success">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    <td class="text-end text-nowrap">
+                        @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                        @if (User.IzniVar(Modul.Stok, Islem.Guncelle))
+                        {
+                            <a asp-action="Guncelle" asp-route-id="@stok.Id"
+                               class="btn btn-sm btn-outline-primary">Düzenle</a>
+                        }
+
+                        @if (stok.Aktif && User.IzniVar(Modul.Stok, Islem.Sil))
+                        {
+                            <form asp-action="PasifeAl" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu stok kartı pasife alınacak. Onaylıyor musunuz?');">
+                                <input type="hidden" name="id" value="@stok.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                            </form>
+                        }
+
+                        @if (!stok.Aktif && User.IzniVar(Modul.Stok, Islem.Guncelle))
+                        {
+                            <form asp-action="AktifYap" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@stok.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <p class="text-muted small mb-0">
+            Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+        </p>
+
+        @if (Model.ToplamSayfa > 1)
+        {
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
+                    </li>
+
+                    @for (var s = 1; s <= Model.ToplamSayfa; s++)
+                    {
+                        <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
+                            <a class="page-link" asp-action="Liste"
+                               asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                               asp-route-sirala="@sirala" asp-route-yon="@yon"
+                               asp-route-sayfa="@s">@s</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif" asp-route-sadeceKritik="@sadeceKritik"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+}

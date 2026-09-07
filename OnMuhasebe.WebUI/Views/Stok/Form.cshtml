@@ -1,0 +1,114 @@
+@model StokFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Stok" : "Stok Güncelle";
+    var kategoriler = ViewBag.Kategoriler as List<string> ?? new List<string>();
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        @* Hangi kaydin guncellendigini tasir; kullaniciya gorunmez. *@
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "bu kod kullaniliyor"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label asp-for="StokKodu" class="form-label"></label>
+                <input asp-for="StokKodu" class="form-control" />
+                <span asp-validation-for="StokKodu" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="StokAdi" class="form-label"></label>
+                <input asp-for="StokAdi" class="form-control" />
+                <span asp-validation-for="StokAdi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Kategori" class="form-label"></label>
+                @* datalist: hem oneri listesi verir hem serbest yazmaya izin verir. *@
+                <input asp-for="Kategori" class="form-control" list="kategoriListesi" autocomplete="off" />
+                <datalist id="kategoriListesi">
+                    @foreach (var k in kategoriler)
+                    {
+                        <option value="@k"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="Kategori" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Birim" class="form-label"></label>
+                <input asp-for="Birim" class="form-control" list="birimListesi" autocomplete="off" />
+                <datalist id="birimListesi">
+                    <option value="Adet"></option>
+                    <option value="Kg"></option>
+                    <option value="Lt"></option>
+                    <option value="Mt"></option>
+                    <option value="M2"></option>
+                    <option value="Paket"></option>
+                    <option value="Kutu"></option>
+                    <option value="Koli"></option>
+                </datalist>
+                <span asp-validation-for="Birim" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="KdvOrani" class="form-label"></label>
+                <input asp-for="KdvOrani" class="form-control" />
+                <span asp-validation-for="KdvOrani" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="AlisFiyati" class="form-label"></label>
+                <input asp-for="AlisFiyati" class="form-control" />
+                <span asp-validation-for="AlisFiyati" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="SatisFiyati" class="form-label"></label>
+                <input asp-for="SatisFiyati" class="form-control" />
+                <span asp-validation-for="SatisFiyati" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="KritikStok" class="form-label"></label>
+                <input asp-for="KritikStok" class="form-control" placeholder="Boş bırakılabilir" />
+                <span asp-validation-for="KritikStok" class="text-danger small"></span>
+                <div class="form-text">Boş bırakılırsa kritik seviye uyarısı yapılmaz.</div>
+            </div>
+
+            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+            @if (!yeniKayit)
+            {
+                <div class="col-md-4 d-flex align-items-center">
+                    <div class="form-check mt-4">
+                        <input asp-for="Aktif" class="form-check-input" />
+                        <label asp-for="Aktif" class="form-check-label"></label>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
