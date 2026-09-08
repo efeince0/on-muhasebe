@@ -1,4 +1,4 @@
-@model SayfaliListe<StokListeViewModel>
+@model StokListeSonucu
 
 @{
     ViewData["Title"] = "Stoklar";
@@ -117,7 +117,9 @@ else
             {
                 <tr>
                     <td><code>@stok.StokKodu</code></td>
-                    <td>@stok.StokAdi</td>
+                    <td>
+                        <a asp-action="Detay" asp-route-id="@stok.Id" class="text-decoration-none">@stok.StokAdi</a>
+                    </td>
                     <td>@(stok.Kategori ?? "—")</td>
                     <td class="text-end @(stok.KritikSeviyede ? "text-danger fw-semibold" : "")">
                         @stok.MevcutMiktar.ToString("N3") @stok.Birim
@@ -138,6 +140,9 @@ else
                         }
                     </td>
                     <td class="text-end text-nowrap">
+                        <a asp-action="Detay" asp-route-id="@stok.Id"
+                           class="btn btn-sm btn-outline-secondary">Detay</a>
+
                         @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
                         @if (User.IzniVar(Modul.Stok, Islem.Guncelle))
                         {
@@ -171,6 +176,12 @@ else
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <p class="text-muted small mb-0">
             Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+            <br />
+            Stok değeri: <strong class="text-body">@Model.ToplamStokDegeri.ToString("N2") ₺</strong>
+            @if (Model.KritikKartSayisi > 0)
+            {
+                <span class="text-danger ms-2">· @Model.KritikKartSayisi kart kritik seviyede</span>
+            }
         </p>
 
         @if (Model.ToplamSayfa > 1)

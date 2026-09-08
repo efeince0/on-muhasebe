@@ -5,7 +5,7 @@ namespace OnMuhasebe.Business.Abstract;
 public interface IStokService
 {
     /// <summary>Liste ekrani icin suzulmus, siralanmis ve sayfalanmis sonuc.</summary>
-    Task<SayfaliListe<StokListeViewModel>> ListeleAsync(
+    Task<StokListeSonucu> ListeleAsync(
         string? arama = null,
         bool sadeceAktif = true,
         bool sadeceKritik = false,
@@ -15,6 +15,8 @@ public interface IStokService
         string yon = "asc");
 
     Task<StokFormViewModel?> FormGetirAsync(int id);
+
+    Task<StokDetayViewModel?> DetayGetirAsync(int id, int sonHareketSayisi = 10);
 
     /// <summary>Form ekraninda kategori onerisi icin mevcut kategoriler.</summary>
     Task<List<string>> KategorileriGetirAsync();

@@ -32,6 +32,21 @@ public class StokController : Controller
         return View(liste);
     }
 
+    
+    [Yetki(Modul.Stok, Islem.Goruntule)]
+    public async Task<IActionResult> Detay(int id)
+    {
+        var model = await _stokService.DetayGetirAsync(id);
+        if (model == null)
+        {
+            TempData["Hata"] = "Kayıt bulunamadı.";
+            return RedirectToAction(nameof(Liste));
+        }
+
+        return View(model);
+    }
+
+
     [HttpGet]
     [Yetki(Modul.Stok, Islem.Ekle)]
     public async Task<IActionResult> Ekle()

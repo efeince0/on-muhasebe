@@ -22,7 +22,7 @@ public class StokService : IStokService
             _context.AktifKullaniciId = kullaniciId;
     }
 
-    public async Task<SayfaliListe<StokListeViewModel>> ListeleAsync(
+    public async Task<StokListeSonucu> ListeleAsync(
         string? arama = null, bool sadeceAktif = true, bool sadeceKritik = false,
         int sayfaNo = 1, int sayfaBoyutu = 20,
         string sirala = "kod", string yon = "asc")
@@ -45,14 +45,16 @@ public class StokService : IStokService
 
         var projeksiyon = sorgu.Select(s => new StokListeViewModel
         {
-            Id          = s.Id,
-            StokKodu    = s.StokKodu,
-            StokAdi     = s.StokAdi,
-            Kategori    = s.Kategori,
-            Birim       = s.Birim,
+            Id = s.Id,
+            StokKodu = s.StokKodu,
+            StokAdi = s.StokAdi,
+            Kategori = s.Kategori,
+            Birim = s.Birim,
             SatisFiyati = s.SatisFiyati,
-            KritikStok  = s.KritikStok,
-            Aktif       = s.Aktif,
+            AlisFiyati = s.AlisFiyati,
+            KritikStok = s.KritikStok,
+            Aktif = s.Aktif,
+
 
             // Giris artirir, Cikis azaltir. Sayim farki isaretli kaydedilir.
             MevcutMiktar =
@@ -67,6 +69,9 @@ public class StokService : IStokService
 
         var toplam = await projeksiyon.CountAsync();
 
+        var toplamDeger = await projeksiyon.SumAsync(x => x.MevcutMiktar * x.AlisFiyati);
+        var kritikSayisi = await projeksiyon.CountAsync(x => x.KritikStok != null && x.MevcutMiktar <= x.KritikStok);
+
         var toplamSayfa = toplam == 0 ? 1 : (int)Math.Ceiling(toplam / (double)sayfaBoyutu);
         if (sayfaNo > toplamSayfa) sayfaNo = toplamSayfa;
 
@@ -75,12 +80,14 @@ public class StokService : IStokService
             .Take(sayfaBoyutu)
             .ToListAsync();
 
-        return new SayfaliListe<StokListeViewModel>
+        return new StokListeSonucu
         {
-            Kayitlar    = kayitlar,
+            Kayitlar = kayitlar,
             ToplamKayit = toplam,
-            SayfaNo     = sayfaNo,
-            SayfaBoyutu = sayfaBoyutu
+            SayfaNo = sayfaNo,
+            SayfaBoyutu = sayfaBoyutu,
+            ToplamStokDegeri = toplamDeger,
+            KritikKartSayisi = kritikSayisi
         };
     }
 
@@ -95,16 +102,16 @@ public class StokService : IStokService
 
         return (sirala, azalan) switch
         {
-            ("ad",       true)  => sorgu.OrderByDescending(x => x.StokAdi),
-            ("ad",       false) => sorgu.OrderBy(x => x.StokAdi),
-            ("kategori", true)  => sorgu.OrderByDescending(x => x.Kategori),
+            ("ad", true) => sorgu.OrderByDescending(x => x.StokAdi),
+            ("ad", false) => sorgu.OrderBy(x => x.StokAdi),
+            ("kategori", true) => sorgu.OrderByDescending(x => x.Kategori),
             ("kategori", false) => sorgu.OrderBy(x => x.Kategori),
-            ("miktar",   true)  => sorgu.OrderByDescending(x => x.MevcutMiktar),
-            ("miktar",   false) => sorgu.OrderBy(x => x.MevcutMiktar),
-            ("fiyat",    true)  => sorgu.OrderByDescending(x => x.SatisFiyati),
-            ("fiyat",    false) => sorgu.OrderBy(x => x.SatisFiyati),
-            (_,          true)  => sorgu.OrderByDescending(x => x.StokKodu),
-            _                   => sorgu.OrderBy(x => x.StokKodu)
+            ("miktar", true) => sorgu.OrderByDescending(x => x.MevcutMiktar),
+            ("miktar", false) => sorgu.OrderBy(x => x.MevcutMiktar),
+            ("fiyat", true) => sorgu.OrderByDescending(x => x.SatisFiyati),
+            ("fiyat", false) => sorgu.OrderBy(x => x.SatisFiyati),
+            (_, true) => sorgu.OrderByDescending(x => x.StokKodu),
+            _ => sorgu.OrderBy(x => x.StokKodu)
         };
     }
 
@@ -115,16 +122,68 @@ public class StokService : IStokService
             .Where(s => s.Id == id)
             .Select(s => new StokFormViewModel
             {
-                Id          = s.Id,
-                StokKodu    = s.StokKodu,
-                StokAdi     = s.StokAdi,
-                Kategori    = s.Kategori,
-                Birim       = s.Birim,
-                AlisFiyati  = s.AlisFiyati,
-                SatisFiyati = s.SatisFiyati,
-                KdvOrani    = s.KdvOrani,
-                KritikStok  = s.KritikStok,
-                Aktif       = s.Aktif
+                Id               = s.Id,
+                StokKodu         = s.StokKodu,
+                StokAdi          = s.StokAdi,
+                Kategori         = s.Kategori,
+                Birim            = s.Birim,
+                AlisFiyati       = s.AlisFiyati,
+                SatisFiyati      = s.SatisFiyati,
+                KdvOrani         = s.KdvOrani,
+                KritikStok       = s.KritikStok,
+                Aktif = s.Aktif
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<StokDetayViewModel?> DetayGetirAsync(int id, int sonHareketSayisi = 10)
+    {
+        return await _context.Stoklar
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new StokDetayViewModel
+            {
+                Id               = s.Id,
+                StokKodu         = s.StokKodu,
+                StokAdi          = s.StokAdi,
+                Kategori         = s.Kategori,
+                Birim            = s.Birim,
+                AlisFiyati       = s.AlisFiyati,
+                SatisFiyati      = s.SatisFiyati,
+                KdvOrani         = s.KdvOrani,
+                KritikStok       = s.KritikStok,
+                Aktif            = s.Aktif,
+
+                ToplamGiris = s.Hareketler
+                    .Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Giris)
+                    .Sum(h => h.Miktar),
+                ToplamCikis = s.Hareketler
+                    .Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Cikis)
+                    .Sum(h => h.Miktar),
+                ToplamSayim = s.Hareketler
+                    .Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim)
+                    .Sum(h => h.Miktar),
+
+                HareketSayisi = s.Hareketler.Count(h => h.Aktif),
+
+                SonHareketler = s.Hareketler
+                    .Where(h => h.Aktif)
+                    .OrderByDescending(h => h.Tarih).ThenByDescending(h => h.Id)
+                    .Take(sonHareketSayisi)
+                    .Select(h => new StokHareketSatirViewModel
+                    {
+                        Id          = h.Id,
+                        HareketNo   = h.HareketNo,
+                        Tarih       = h.Tarih,
+                        HareketTipi = h.HareketTipi,
+                        Miktar      = h.Miktar,
+                        Aciklama    = h.Aciklama,
+                        FaturadanMi = h.FaturaId != null
+                    })
+                    .ToList(),
+
+                OlusturmaTarihi  = s.OlusturmaTarihi,
+                GuncellemeTarihi = s.GuncellemeTarihi
             })
             .FirstOrDefaultAsync();
     }
@@ -174,15 +233,15 @@ public class StokService : IStokService
         {
             _context.Stoklar.Add(new Stok
             {
-                StokKodu    = model.StokKodu.Trim(),
-                StokAdi     = model.StokAdi.Trim(),
-                Kategori    = model.Kategori?.Trim(),
-                Birim       = model.Birim.Trim(),
-                AlisFiyati  = model.AlisFiyati,
+                StokKodu = model.StokKodu.Trim(),
+                StokAdi = model.StokAdi.Trim(),
+                Kategori = model.Kategori?.Trim(),
+                Birim = model.Birim.Trim(),
+                AlisFiyati = model.AlisFiyati,
                 SatisFiyati = model.SatisFiyati,
-                KdvOrani    = model.KdvOrani,
-                KritikStok  = model.KritikStok,
-                Aktif       = true
+                KdvOrani = model.KdvOrani,
+                KritikStok = model.KritikStok,
+                Aktif = true
             });
         }
         else
@@ -191,15 +250,15 @@ public class StokService : IStokService
             if (mevcut == null)
                 return (false, "Güncellenecek kayıt bulunamadı.");
 
-            mevcut.StokKodu    = model.StokKodu.Trim();
-            mevcut.StokAdi     = model.StokAdi.Trim();
-            mevcut.Kategori    = model.Kategori?.Trim();
-            mevcut.Birim       = model.Birim.Trim();
-            mevcut.AlisFiyati  = model.AlisFiyati;
+            mevcut.StokKodu = model.StokKodu.Trim();
+            mevcut.StokAdi = model.StokAdi.Trim();
+            mevcut.Kategori = model.Kategori?.Trim();
+            mevcut.Birim = model.Birim.Trim();
+            mevcut.AlisFiyati = model.AlisFiyati;
             mevcut.SatisFiyati = model.SatisFiyati;
-            mevcut.KdvOrani    = model.KdvOrani;
-            mevcut.KritikStok  = model.KritikStok;
-            mevcut.Aktif       = model.Aktif;
+            mevcut.KdvOrani = model.KdvOrani;
+            mevcut.KritikStok = model.KritikStok;
+            mevcut.Aktif = model.Aktif;
         }
 
         await _context.SaveChangesAsync();

@@ -1,0 +1,197 @@
+@model StokDetayViewModel
+
+@{
+    ViewData["Title"] = Model.StokAdi;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h3 class="mb-1">@Model.StokAdi</h3>
+        <span class="text-muted">
+            <code>@Model.StokKodu</code>
+            @if (!string.IsNullOrWhiteSpace(Model.Kategori))
+            {
+                <text>· @Model.Kategori</text>
+            }
+            · @Model.Birim
+        </span>
+        @if (!Model.Aktif)
+        {
+            <span class="badge text-bg-secondary ms-2">Pasif</span>
+        }
+        @if (Model.KritikSeviyede)
+        {
+            <span class="badge text-bg-danger ms-2">Kritik seviye</span>
+        }
+    </div>
+    <div class="text-nowrap">
+        @if (User.IzniVar(Modul.Stok, Islem.Guncelle))
+        {
+            <a asp-action="Guncelle" asp-route-id="@Model.Id" class="btn btn-outline-primary">Düzenle</a>
+        }
+
+        @if (Model.Aktif && User.IzniVar(Modul.Stok, Islem.Sil))
+        {
+            <form asp-action="PasifeAl" method="post" class="d-inline"
+                  onsubmit="return confirm('Bu stok kartı pasife alınacak. Onaylıyor musunuz?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-danger">Pasife Al</button>
+            </form>
+        }
+
+        @if (!Model.Aktif && User.IzniVar(Modul.Stok, Islem.Guncelle))
+        {
+            <form asp-action="AktifYap" method="post" class="d-inline">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-success">Aktif Et</button>
+            </form>
+        }
+
+        <a asp-action="Liste" class="btn btn-outline-secondary">Listeye dön</a>
+    </div>
+</div>
+
+@* --- MİKTAR ÖZETİ --- *@
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Toplam Giriş</div>
+            <div class="fs-5 text-success">@Model.ToplamGiris.ToString("N3")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Toplam Çıkış</div>
+            <div class="fs-5 text-danger">@Model.ToplamCikis.ToString("N3")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Sayım Farkı</div>
+            <div class="fs-5">@Model.ToplamSayim.ToString("N3")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100 bg-light">
+            <div class="text-muted small">Mevcut Miktar</div>
+            <div class="fs-4 fw-semibold @(Model.KritikSeviyede ? "text-danger" : "")">
+                @Model.MevcutMiktar.ToString("N3") <span class="fs-6 fw-normal">@Model.Birim</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @* --- FİYAT BİLGİLERİ --- *@
+    <div class="col-lg-5">
+        <h5 class="mb-3">Fiyat ve Değer</h5>
+        <table class="table table-sm">
+            <tr>
+                <th class="text-muted fw-normal" style="width:50%">Alış Fiyatı</th>
+                <td class="text-end">@Model.AlisFiyati.ToString("N2") ₺</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">Satış Fiyatı</th>
+                <td class="text-end">@Model.SatisFiyati.ToString("N2") ₺</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">KDV Oranı</th>
+                <td class="text-end">%@Model.KdvOrani.ToString("N0")</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">KDV Dahil Satış</th>
+                <td class="text-end fw-semibold">@Model.KdvDahilSatis.ToString("N2") ₺</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">Kâr Marjı</th>
+                <td class="text-end">
+                    @* Alış fiyatı 0 ise marj hesaplanamaz; bölme yapılmadan tire basılır. *@
+                    @if (Model.KarMarjiYuzde.HasValue)
+                    {
+                        <span class="@(Model.KarMarjiYuzde < 0 ? "text-danger" : "text-success")">
+                            %@Model.KarMarjiYuzde.Value.ToString("N1")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+            </tr>
+            <tr class="table-light">
+                <th class="text-muted fw-normal">Stok Değeri</th>
+                <td class="text-end fw-semibold">@Model.StokDegeri.ToString("N2") ₺</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">Kritik Seviye</th>
+                <td class="text-end">
+                    @(Model.KritikStok.HasValue
+                        ? $"{Model.KritikStok.Value:N3} {Model.Birim}"
+                        : "Takip edilmiyor")
+                </td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">Kayıt</th>
+                <td class="text-end">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+            </tr>
+            <tr>
+                <th class="text-muted fw-normal">Son güncelleme</th>
+                <td class="text-end">@(Model.GuncellemeTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+            </tr>
+        </table>
+    </div>
+
+    @* --- SON HAREKETLER --- *@
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-baseline mb-3">
+            <h5 class="mb-0">Son Hareketler</h5>
+            <span class="text-muted small">Toplam @Model.HareketSayisi hareket</span>
+        </div>
+
+        @if (Model.SonHareketler.Count == 0)
+        {
+            <div class="alert alert-light border">
+                Bu stok kartına ait hareket yok. Hareketler fatura kesildiğinde veya
+                elle giriş/çıkış girildiğinde oluşur.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Hareket No</th>
+                            <th>Tip</th>
+                            <th class="text-end">Miktar</th>
+                            <th>Kaynak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var hareket in Model.SonHareketler)
+                    {
+                        <tr>
+                            <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
+                            <td><code>@hareket.HareketNo</code></td>
+                            <td>@hareket.HareketTipi</td>
+                            <td class="text-end">@hareket.Miktar.ToString("N3")</td>
+                            <td>
+                                @if (hareket.FaturadanMi)
+                                {
+                                    <span class="badge text-bg-info">Fatura</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-light text-dark">Elle</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
