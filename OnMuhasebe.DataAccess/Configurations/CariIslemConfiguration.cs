@@ -8,7 +8,8 @@ public class CariIslemConfiguration : IEntityTypeConfiguration<CariIslem>
 {
     public void Configure(EntityTypeBuilder<CariIslem> builder)
     {
-        builder.ToTable("CariIslemler");
+        builder.ToTable("CariIslemler", t =>
+            t.HasCheckConstraint("CK_CariIslemler_Tutar", "[Tutar] > 0"));
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.IslemNo).HasMaxLength(20).IsRequired();

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using OnMuhasebe.Business.Abstract;
 using OnMuhasebe.Core.Enums;
 using OnMuhasebe.Entities.ViewModels;
@@ -95,10 +95,10 @@ public class StokController : Controller
     [Yetki(Modul.Stok, Islem.Sil)]
     public async Task<IActionResult> PasifeAl(int id)
     {
-        var (basarili, hata) = await _stokService.PasifeAlAsync(id);
+        var (basarili, mesaj) = await _stokService.PasifeAlAsync(id);
 
-        if (basarili) TempData["Basarili"] = "Stok kartı pasife alındı.";
-        else          TempData["Hata"]     = hata;
+        if (basarili) TempData["Basarili"] = mesaj ?? "Stok kartı pasife alındı.";
+        else          TempData["Hata"]     = mesaj;
 
         return RedirectToAction(nameof(Liste));
     }

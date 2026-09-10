@@ -1,4 +1,4 @@
-using OnMuhasebe.Entities.ViewModels;
+﻿using OnMuhasebe.Entities.ViewModels;
 
 namespace OnMuhasebe.Business.Abstract;
 
@@ -26,8 +26,8 @@ public interface IStokService
 
     Task<(bool Basarili, string? Hata)> KaydetAsync(StokFormViewModel model);
 
-    /// <summary>Kalici silmez; Aktif = false yapar. Stogu sifir degilse reddeder.</summary>
-    Task<(bool Basarili, string? Hata)> PasifeAlAsync(int id);
+    /// <summary>Kalici silmez; Aktif = false yapar. Stok varsa engellemez, mesajla bildirir.</summary>
+    Task<(bool Basarili, string? Mesaj)> PasifeAlAsync(int id);
 
     Task<(bool Basarili, string? Hata)> AktifYapAsync(int id);
 }

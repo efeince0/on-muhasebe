@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using OnMuhasebe.Business.Abstract;
 using OnMuhasebe.Core.Enums;
@@ -265,7 +265,7 @@ public class StokService : IStokService
         return (true, null);
     }
 
-    public async Task<(bool Basarili, string? Hata)> PasifeAlAsync(int id)
+    public async Task<(bool Basarili, string? Mesaj)> PasifeAlAsync(int id)
     {
         var stok = await _context.Stoklar.FirstOrDefaultAsync(s => s.Id == id);
         if (stok == null)
@@ -274,14 +274,17 @@ public class StokService : IStokService
         if (!stok.Aktif)
             return (false, "Kayıt zaten pasif durumda.");
 
-        // Depo kurali: uzerinde mal duran kart kapatilamaz, once sayim/cikis yapilmali.
+        // Mevcut miktar pasife almayi engellemez; dokuman kalici silme yerine
+        // pasife almayi oneriyor. Depodaki bakiye kullaniciya bildirilir.
         var miktar = await MiktarHesaplaAsync(id);
-        if (miktar != 0)
-            return (false, $"Stoğu sıfır olmayan kart pasife alınamaz. Mevcut miktar: {miktar:N3} {stok.Birim}");
 
+        // Kayitlar kalici silinmez; gecmis hareketlerin bagli oldugu kart korunur.
         stok.Aktif = false;
         await _context.SaveChangesAsync();
-        return (true, null);
+
+        return miktar != 0
+            ? (true, $"Stok kartı pasife alındı. Dikkat: {miktar:N3} {stok.Birim} stok görünüyor.")
+            : (true, null);
     }
 
     public async Task<(bool Basarili, string? Hata)> AktifYapAsync(int id)

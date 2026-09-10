@@ -8,7 +8,8 @@ public class FaturaSatirConfiguration : IEntityTypeConfiguration<FaturaSatir>
 {
     public void Configure(EntityTypeBuilder<FaturaSatir> builder)
     {
-        builder.ToTable("FaturaSatirlari");
+        builder.ToTable("FaturaSatirlari", t =>
+            t.HasCheckConstraint("CK_FaturaSatirlari_Miktar", "[Miktar] > 0"));
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Miktar).HasPrecision(18, 3);

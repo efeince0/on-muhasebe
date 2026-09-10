@@ -8,7 +8,10 @@ public class StokHareketConfiguration : IEntityTypeConfiguration<StokHareket>
 {
     public void Configure(EntityTypeBuilder<StokHareket> builder)
     {
-        builder.ToTable("StokHareketleri");
+        // Giris ve Cikis miktari pozitif olmali; Sayim farki negatif olabilir.
+        builder.ToTable("StokHareketleri", t =>
+            t.HasCheckConstraint("CK_StokHareketleri_Miktar",
+                "[HareketTipi] = 'Sayim' OR [Miktar] > 0"));
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.HareketNo).HasMaxLength(20).IsRequired();

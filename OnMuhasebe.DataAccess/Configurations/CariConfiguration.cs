@@ -23,5 +23,11 @@ public class CariConfiguration : IEntityTypeConfiguration<Cari>
         builder.Property(x => x.Aktif).HasDefaultValue(true);
 
         builder.HasIndex(x => x.CariKodu).IsUnique();
+
+        // SQL Server unique index'te NULL'lari esit sayar; filtre olmadan
+        // vergi no'su bos yalnizca bir cari kaydedilebilirdi.
+        builder.HasIndex(x => x.VergiNo)
+               .IsUnique()
+               .HasFilter("[VergiNo] IS NOT NULL");
     }
 }

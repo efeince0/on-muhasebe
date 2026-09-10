@@ -1,4 +1,4 @@
-using OnMuhasebe.Entities.ViewModels;
+﻿using OnMuhasebe.Entities.ViewModels;
 
 namespace OnMuhasebe.Business.Abstract;
 
@@ -25,8 +25,8 @@ public interface ICariService
     /// <summary>Id = 0 ise ekler, degilse gunceller.</summary>
     Task<(bool Basarili, string? Hata)> KaydetAsync(CariFormViewModel model);
 
-    /// <summary>Kalici silmez; Aktif = false yapar. Bakiyesi sifir degilse reddeder.</summary>
-    Task<(bool Basarili, string? Hata)> PasifeAlAsync(int id);
+    /// <summary>Kalici silmez; Aktif = false yapar. Bakiye varsa engellemez, mesajla bildirir.</summary>
+    Task<(bool Basarili, string? Mesaj)> PasifeAlAsync(int id);
 
     Task<(bool Basarili, string? Hata)> AktifYapAsync(int id);
 }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using OnMuhasebe.Business.Abstract;
 using OnMuhasebe.Core.Enums;
@@ -206,6 +206,17 @@ public class CariService : ICariService
         if (kodKullanimda)
             return (false, "Bu cari kodu başka bir kayıtta kullanılıyor.");
 
+        // Vergi no bos birakilabilir; bos olanlar benzersizlik disinda tutulur.
+        if (!string.IsNullOrWhiteSpace(model.VergiNo))
+        {
+            var vergiNo = model.VergiNo.Trim();
+            var vergiNoKullanimda = await _context.Cariler
+                .AnyAsync(c => c.VergiNo == vergiNo && c.Id != model.Id);
+
+            if (vergiNoKullanimda)
+                return (false, "Bu vergi numarası başka bir kayıtta kullanılıyor.");
+        }
+
         if (model.Id == 0)
         {
             _context.Cariler.Add(new Cari
@@ -244,7 +255,7 @@ public class CariService : ICariService
         return (true, null);
     }
 
-    public async Task<(bool Basarili, string? Hata)> PasifeAlAsync(int id)
+    public async Task<(bool Basarili, string? Mesaj)> PasifeAlAsync(int id)
     {
         var cari = await _context.Cariler.FirstOrDefaultAsync(c => c.Id == id);
         if (cari == null)
@@ -253,15 +264,17 @@ public class CariService : ICariService
         if (!cari.Aktif)
             return (false, "Kayıt zaten pasif durumda.");
 
-        // Muhasebe kurali: acik bakiyesi olan hesap kapatilamaz.
+        // Bakiye pasife almayi engellemez; dokuman hareketi olan cari icin
+        // pasife almayi tek cikis yolu olarak tanimliyor. Kullanici bilgilendirilir.
         var bakiye = await BakiyeHesaplaAsync(id);
-        if (bakiye != 0)
-            return (false, $"Bakiyesi sıfır olmayan cari pasife alınamaz. Güncel bakiye: {bakiye:N2} ₺");
 
         // Kayitlar kalici silinmez; gecmis hareketlerin bagli oldugu cari korunur.
         cari.Aktif = false;
         await _context.SaveChangesAsync();
-        return (true, null);
+
+        return bakiye != 0
+            ? (true, $"Cari pasife alındı. Dikkat: {bakiye:N2} ₺ bakiyesi var.")
+            : (true, null);
     }
 
     public async Task<(bool Basarili, string? Hata)> AktifYapAsync(int id)

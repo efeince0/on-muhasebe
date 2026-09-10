@@ -32,6 +32,9 @@ public class KimlikService : IKimlikService
         if (sonuc == PasswordVerificationResult.Failed)
             return null;
 
+        kullanici.SonGiris = DateTime.Now;
+        await _context.SaveChangesAsync();
+
         return kullanici;
     }
 }
