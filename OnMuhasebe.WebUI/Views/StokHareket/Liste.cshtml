@@ -1,0 +1,247 @@
+@model StokHareketListeSonucu
+
+@{
+    ViewData["Title"] = "Stok Hareketleri";
+
+    var stokId      = ViewBag.StokId as int?;
+    var baslangic   = ViewBag.Baslangic as DateTime?;
+    var bitis       = ViewBag.Bitis as DateTime?;
+    var hareketTipi = ViewBag.HareketTipi as StokHareketTipi?;
+    var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
+    var sirala      = ViewBag.Sirala as string ?? "tarih";
+    var yon         = ViewBag.Yon as string ?? "desc";
+    var stoklar     = ViewBag.Stoklar as List<StokSecimViewModel> ?? [];
+
+    // Bir kolona tiklandiginda: ayni kolonsa yonu ters cevir, farkliysa artan baslat.
+    Func<string, string> yeniYon = kolon => (sirala == kolon && yon == "asc") ? "desc" : "asc";
+    Func<string, string> ok      = kolon => sirala != kolon ? "" : (yon == "asc" ? " ▲" : " ▼");
+
+    var bas = baslangic?.ToString("yyyy-MM-dd");
+    var bit = bitis?.ToString("yyyy-MM-dd");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Stok Hareketleri</h3>
+
+    @if (User.IzniVar(Modul.StokHareket, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni Hareket</a>
+    }
+</div>
+
+@* method="get": suzgec degerleri adres cubugunda kalir, sayfa paylasilabilir olur. *@
+<form asp-action="Liste" method="get" class="row g-2 mb-4">
+    <input type="hidden" name="sirala" value="@sirala" />
+    <input type="hidden" name="yon" value="@yon" />
+
+    <div class="col-md-4">
+        <select name="stokId" class="form-select">
+            <option value="">Tüm ürünler</option>
+            @foreach (var stok in stoklar)
+            {
+                <option value="@stok.Id" selected="@(stokId == stok.Id)">@stok.Etiket</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="baslangic" class="form-control" value="@bas" title="Başlangıç tarihi" />
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="bitis" class="form-control" value="@bit" title="Bitiş tarihi" />
+    </div>
+
+    <div class="col-md-2">
+        <select name="hareketTipi" class="form-select">
+            <option value="">Tümü</option>
+            <option value="@StokHareketTipi.Giris" selected="@(hareketTipi == StokHareketTipi.Giris)">Giriş</option>
+            <option value="@StokHareketTipi.Cikis" selected="@(hareketTipi == StokHareketTipi.Cikis)">Çıkış</option>
+            <option value="@StokHareketTipi.Sayim" selected="@(hareketTipi == StokHareketTipi.Sayim)">Sayım</option>
+        </select>
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-secondary flex-fill">Filtrele</button>
+        <a asp-action="Liste" class="btn btn-outline-secondary">Temizle</a>
+    </div>
+
+    <div class="col-12">
+        <div class="form-check">
+            @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+            <input type="hidden" name="sadeceAktif" value="false" />
+            <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+                   class="form-check-input" @(sadeceAktif ? "checked" : "") />
+            <label for="sadeceAktif" class="form-check-label small">Sadece aktif hareketler</label>
+        </div>
+    </div>
+</form>
+
+@if (Model.ToplamKayit == 0)
+{
+    <div class="text-center border rounded py-5">
+        <p class="text-muted mb-3">Bu filtreye uyan hareket bulunamadı.</p>
+        @if (User.IzniVar(Modul.StokHareket, Islem.Ekle))
+        {
+            <a asp-action="Ekle" class="btn btn-primary">İlk hareketi gir</a>
+        }
+    </div>
+}
+else
+{
+    @* Toplamlar sayfaya degil, suzgecin tamamina aittir. *@
+    <div class="row g-3 mb-3">
+        <div class="col-4 col-lg-3">
+            <div class="border rounded p-3">
+                <div class="text-muted small">Toplam Giriş</div>
+                <div class="fs-5 text-success">@Model.ToplamGiris.ToString("N3")</div>
+            </div>
+        </div>
+        <div class="col-4 col-lg-3">
+            <div class="border rounded p-3">
+                <div class="text-muted small">Toplam Çıkış</div>
+                <div class="fs-5 text-danger">@Model.ToplamCikis.ToString("N3")</div>
+            </div>
+        </div>
+        <div class="col-4 col-lg-3">
+            <div class="border rounded p-3">
+                <div class="text-muted small">Sayım Farkı (net)</div>
+                <div class="fs-5">@Model.ToplamSayim.ToString("N3")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="tarih" asp-route-yon="@yeniYon("tarih")">Tarih@(ok("tarih"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="no" asp-route-yon="@yeniYon("no")">Hareket No@(ok("no"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="urun" asp-route-yon="@yeniYon("urun")">Ürün@(ok("urun"))</a>
+                    </th>
+                    <th>Tip</th>
+                    <th class="text-end">
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="miktar" asp-route-yon="@yeniYon("miktar")">Miktar@(ok("miktar"))</a>
+                    </th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var hareket in Model.Kayitlar)
+            {
+                <tr class="@(hareket.Aktif ? "" : "text-muted")">
+                    <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
+                    <td><code>@hareket.HareketNo</code></td>
+                    <td>
+                        <a asp-controller="Stok" asp-action="Detay" asp-route-id="@hareket.StokId"
+                           class="text-decoration-none">@hareket.StokAdi</a>
+                        <div class="text-muted small">@hareket.Aciklama</div>
+                    </td>
+                    <td>
+                        @switch (hareket.HareketTipi)
+                        {
+                            case StokHareketTipi.Giris:
+                                <span class="badge text-bg-success">Giriş</span>
+                                break;
+                            case StokHareketTipi.Cikis:
+                                <span class="badge text-bg-danger">Çıkış</span>
+                                break;
+                            default:
+                                <span class="badge text-bg-warning">Sayım</span>
+                                break;
+                        }
+                        @if (!hareket.Aktif)
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    @* Sayimda tabloda fark duruyor; eksi fark isaretiyle gosteriliyor. *@
+                    <td class="text-end">@hareket.Miktar.ToString("N3") <span class="text-muted small">@hareket.Birim</span></td>
+                    <td class="text-end text-nowrap">
+                        @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                        @if (User.IzniVar(Modul.StokHareket, Islem.Guncelle))
+                        {
+                            <a asp-action="Guncelle" asp-route-id="@hareket.Id"
+                               class="btn btn-sm btn-outline-primary">Düzenle</a>
+                        }
+
+                        @if (hareket.Aktif && User.IzniVar(Modul.StokHareket, Islem.Sil))
+                        {
+                            <form asp-action="PasifeAl" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu hareket pasife alınacak ve ürün miktarı yeniden hesaplanacak. Onaylıyor musunuz?');">
+                                <input type="hidden" name="id" value="@hareket.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                            </form>
+                        }
+
+                        @if (!hareket.Aktif && User.IzniVar(Modul.StokHareket, Islem.Guncelle))
+                        {
+                            <form asp-action="AktifYap" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@hareket.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <p class="text-muted small mb-0">
+            Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+        </p>
+
+        @if (Model.ToplamSayfa > 1)
+        {
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
+                    </li>
+
+                    @for (var s = 1; s <= Model.ToplamSayfa; s++)
+                    {
+                        <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
+                            <a class="page-link" asp-action="Liste"
+                               asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                               asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                               asp-route-sirala="@sirala" asp-route-yon="@yon"
+                               asp-route-sayfa="@s">@s</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-stokId="@stokId" asp-route-baslangic="@bas" asp-route-bitis="@bit"
+                           asp-route-hareketTipi="@hareketTipi" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+}

@@ -308,17 +308,40 @@ public class StokService : IStokService
         return (true, null);
     }
 
-    private async Task<decimal> MiktarHesaplaAsync(int stokId)
+    public async Task<List<StokSecimViewModel>> SecimListesiAsync()
+    {
+        // Acilir listede yalnizca aktif kartlar; pasif karta yeni hareket girilmez.
+        return await _context.Stoklar
+            .AsNoTracking()
+            .Where(s => s.Aktif)
+            .OrderBy(s => s.StokKodu)
+            .Select(s => new StokSecimViewModel
+            {
+                Id       = s.Id,
+                StokKodu = s.StokKodu,
+                StokAdi  = s.StokAdi,
+                Birim    = s.Birim
+            })
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Miktar formulunun tek sahibi burasi. Stok hareketleri servisi de
+    /// kendi kopyasini yazmak yerine bunu cagirir; formul degisirse tek yer degisir.
+    /// </summary>
+    public async Task<decimal> MiktarGetirAsync(int stokId, int? haricHareketId = null)
     {
         return await _context.Stoklar
             .AsNoTracking()
             .Where(s => s.Id == stokId)
             .Select(s =>
-                  s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Giris).Sum(h => h.Miktar)
-                - s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Cikis).Sum(h => h.Miktar)
-                + s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
+                  s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Giris).Sum(h => h.Miktar)
+                - s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Cikis).Sum(h => h.Miktar)
+                + s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
                 + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
                 - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar))
             .FirstAsync();
     }
+
+    private Task<decimal> MiktarHesaplaAsync(int stokId) => MiktarGetirAsync(stokId);
 }

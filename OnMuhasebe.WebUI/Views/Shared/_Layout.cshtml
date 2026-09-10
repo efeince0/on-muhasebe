@@ -43,6 +43,12 @@
                                     <a class="nav-link text-dark" asp-controller="Stok" asp-action="Liste">Stoklar</a>
                                 </li>
                             }
+                            @if (User.IzniVar(Modul.StokHareket, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="StokHareket" asp-action="Liste">Stok Hareketleri</a>
+                                </li>
+                            }
                             @if (User.IzniVar(Modul.Fatura, Islem.Goruntule))
                             {
                                 <li class="nav-item">

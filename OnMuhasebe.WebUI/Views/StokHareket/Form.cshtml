@@ -1,0 +1,183 @@
+@model StokHareketFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Stok Hareketi" : "Stok Hareketi Güncelle";
+
+    var stoklar = ViewBag.Stoklar as List<StokSecimViewModel> ?? [];
+    var sayimMi = Model.HareketTipi == StokHareketTipi.Sayim;
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "yetersiz stok"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label asp-for="HareketNo" class="form-label"></label>
+                <input asp-for="HareketNo" class="form-control" />
+                <span asp-validation-for="HareketNo" class="text-danger small"></span>
+                <div class="form-text">Öneri; değiştirebilirsiniz.</div>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="StokId" class="form-label"></label>
+                <select asp-for="StokId" class="form-select">
+                    <option value="0">Seçiniz</option>
+                    @foreach (var stok in stoklar)
+                    {
+                        <option value="@stok.Id">@stok.Etiket</option>
+                    }
+                </select>
+                <span asp-validation-for="StokId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="HareketTipi" class="form-label"></label>
+                <select asp-for="HareketTipi" class="form-select"
+                        asp-items="Html.GetEnumSelectList<StokHareketTipi>()"></select>
+                <span asp-validation-for="HareketTipi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Tarih" class="form-label"></label>
+                <input asp-for="Tarih" type="date" class="form-control" />
+                <span asp-validation-for="Tarih" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                @* Etiket sayimda degisiyor: girilen sey fark degil, sayilan miktar. *@
+                <label asp-for="Miktar" class="form-label" id="miktarEtiket">
+                    @(sayimMi ? "Sayılan Miktar" : "Miktar")
+                </label>
+                <input asp-for="Miktar" class="form-control" />
+                <span asp-validation-for="Miktar" class="text-danger small"></span>
+                <div class="form-text" id="mevcutBilgi" hidden></div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Aciklama" class="form-label"></label>
+                <textarea asp-for="Aciklama" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Aciklama" class="text-danger small"></span>
+            </div>
+
+            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+            @if (!yeniKayit)
+            {
+                <div class="col-md-4">
+                    <div class="form-check mt-2">
+                        <input asp-for="Aktif" class="form-check-input" />
+                        <label asp-for="Aktif" class="form-check-label"></label>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <div class="alert alert-light border mt-4 small mb-0">
+            <b>Giriş</b> miktarı artırır, <b>çıkış</b> azaltır — çıkış eldeki maldan fazla olamaz.
+            <b>Sayım</b>'da depoda saydığınız miktarı girersiniz; kayıtlarla arasındaki farkı
+            sistem hesaplayıp düzeltme olarak yazar.
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            // Enum degerleri sunucudan basiliyor; JS'te 3 gibi sihirli sayi durmasin.
+            const SAYIM     = '@((int)StokHareketTipi.Sayim)';
+            const YENI      = @(yeniKayit ? "true" : "false");
+            const HARIC_ID  = '@Model.Id';
+
+            const tipAlan     = document.getElementById('HareketTipi');
+            const stokAlan    = document.getElementById('StokId');
+            const noAlan      = document.getElementById('HareketNo');
+            const etiket      = document.getElementById('miktarEtiket');
+            const mevcutBilgi = document.getElementById('mevcutBilgi');
+
+            const sayimMi = () => tipAlan.value === SAYIM;
+
+            function etiketiGuncelle() {
+                etiket.textContent = sayimMi() ? 'Sayılan Miktar' : 'Miktar';
+            }
+
+            // Sayimda kullanici neyi duzelttigini gormeli: kayitlardaki mevcut miktar.
+            async function mevcuduGoster() {
+                if (!sayimMi() || stokAlan.value === '0') {
+                    mevcutBilgi.hidden = true;
+                    return;
+                }
+
+                let adres = '@Url.Action("MevcutMiktar")?stokId=' + stokAlan.value;
+
+                // Guncellemede kaydin kendi etkisi disindaki miktar gosterilir.
+                if (HARIC_ID !== '0') adres += '&haricHareketId=' + HARIC_ID;
+
+                try {
+                    const cevap = await fetch(adres);
+                    if (!cevap.ok) return;
+
+                    const veri = await cevap.json();
+                    mevcutBilgi.textContent =
+                        'Kayıtlarda görünen miktar: ' +
+                        Number(veri.miktar).toLocaleString('tr-TR', {
+                            minimumFractionDigits: 3, maximumFractionDigits: 3
+                        });
+                    mevcutBilgi.hidden = false;
+                } catch {
+                    // Bilgi amacli; alinamazsa form calismaya devam eder.
+                }
+            }
+
+            // Hareket numarasi tipe gore uretiliyor (GIR/CIK/SAY); sayaci istemci bilemez.
+            async function numarayiTazele() {
+                if (!YENI || noAlan.dataset.elleDegisti === '1') return;
+
+                try {
+                    const cevap = await fetch('@Url.Action("SonrakiNo")?hareketTipi=' + tipAlan.value);
+                    if (!cevap.ok) return;
+
+                    const veri = await cevap.json();
+                    noAlan.value = veri.hareketNo;
+                } catch {
+                    // Numara zaten bir oneri; alinamazsa mevcut deger kalir.
+                }
+            }
+
+            noAlan.addEventListener('input', function () {
+                this.dataset.elleDegisti = '1';
+            });
+
+            tipAlan.addEventListener('change', function () {
+                etiketiGuncelle();
+                numarayiTazele();
+                mevcuduGoster();
+            });
+
+            stokAlan.addEventListener('change', mevcuduGoster);
+
+            // Sayfa acilisinda da calissin: guncelleme formu sayimla acilmis olabilir.
+            etiketiGuncelle();
+            mevcuduGoster();
+        })();
+    </script>
+}

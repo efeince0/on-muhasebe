@@ -24,6 +24,15 @@ public interface IStokService
     /// <summary>Yeni kayit icin bir sonraki bos kodu onerir. Garanti degil, yalnizca oneri.</summary>
     Task<string> SonrakiKodOnerAsync(string onEk = "S");
 
+    /// <summary>Acilir listeler icin aktif stok kartlarinin kod + ad + birim listesi.</summary>
+    Task<List<StokSecimViewModel>> SecimListesiAsync();
+
+    /// <summary>
+    /// Bir kartin mevcut miktari. haricHareketId verilirse o hareket sayilmaz;
+    /// mevcut bir hareketi guncellerken "kendisi haric" miktara bakmak icin.
+    /// </summary>
+    Task<decimal> MiktarGetirAsync(int stokId, int? haricHareketId = null);
+
     Task<(bool Basarili, string? Hata)> KaydetAsync(StokFormViewModel model);
 
     /// <summary>Kalici silmez; Aktif = false yapar. Stok varsa engellemez, mesajla bildirir.</summary>
