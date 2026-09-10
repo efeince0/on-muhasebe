@@ -1,0 +1,132 @@
+@model CariIslemFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    var tipAdi    = Model.IslemTipi == IslemTipi.Tahsilat ? "Tahsilat" : "Ödeme";
+    ViewData["Title"] = yeniKayit ? $"Yeni {tipAdi}" : $"{tipAdi} Güncelle";
+
+    var cariler = ViewBag.Cariler as List<CariSecimViewModel> ?? [];
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "bu makbuz no kullaniliyor"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label asp-for="IslemNo" class="form-label"></label>
+                <input asp-for="IslemNo" class="form-control" />
+                <span asp-validation-for="IslemNo" class="text-danger small"></span>
+                <div class="form-text">Öneri; değiştirebilirsiniz.</div>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="CariId" class="form-label"></label>
+                <select asp-for="CariId" class="form-select">
+                    <option value="0">Seçiniz</option>
+                    @foreach (var cari in cariler)
+                    {
+                        <option value="@cari.Id">@cari.Etiket</option>
+                    }
+                </select>
+                <span asp-validation-for="CariId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="IslemTipi" class="form-label"></label>
+                <select asp-for="IslemTipi" class="form-select"
+                        asp-items="Html.GetEnumSelectList<IslemTipi>()"></select>
+                <span asp-validation-for="IslemTipi" class="text-danger small"></span>
+                <div class="form-text">
+                    Tahsilat bakiyeyi azaltır, ödeme borcu kapatır.
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Tarih" class="form-label"></label>
+                <input asp-for="Tarih" type="date" class="form-control" />
+                <span asp-validation-for="Tarih" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Tutar" class="form-label"></label>
+                <input asp-for="Tutar" class="form-control" />
+                <span asp-validation-for="Tutar" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="OdemeSekli" class="form-label"></label>
+                <select asp-for="OdemeSekli" class="form-select"
+                        asp-items="Html.GetEnumSelectList<OdemeSekli>()"></select>
+                <span asp-validation-for="OdemeSekli" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Aciklama" class="form-label"></label>
+                <textarea asp-for="Aciklama" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Aciklama" class="text-danger small"></span>
+            </div>
+
+            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+            @if (!yeniKayit)
+            {
+                <div class="col-md-4">
+                    <div class="form-check mt-2">
+                        <input asp-for="Aktif" class="form-check-input" />
+                        <label asp-for="Aktif" class="form-check-label"></label>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    @* Makbuz numarasi tipe gore uretiliyor (TAH... / ODE...). Tip degisince
+       yeni numarayi sunucudan istiyoruz; sayaci istemci bilemez.
+       Yalnizca yeni kayitta calisir, mevcut kaydin numarasi degistirilmez. *@
+    @if (yeniKayit)
+    {
+        <script>
+            document.getElementById('IslemTipi').addEventListener('change', async function () {
+                const alan = document.getElementById('IslemNo');
+
+                // Kullanici numarayi elle degistirdiyse ustune yazmayalim.
+                if (alan.dataset.elleDegisti === '1') return;
+
+                try {
+                    const cevap = await fetch('@Url.Action("SonrakiNo")?islemTipi=' + this.value);
+                    if (!cevap.ok) return;
+
+                    const veri = await cevap.json();
+                    alan.value = veri.islemNo;
+                } catch {
+                    // Numara zaten bir oneri; alinamazsa mevcut deger kalir.
+                }
+            });
+
+            document.getElementById('IslemNo').addEventListener('input', function () {
+                this.dataset.elleDegisti = '1';
+            });
+        </script>
+    }
+}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -29,6 +29,12 @@
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-controller="Cari" asp-action="Liste">Cariler</a>
+                                </li>
+                            }
+                            @if (User.IzniVar(Modul.CariIslem, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="CariIslem" asp-action="Liste">Tahsilat / Ödeme</a>
                                 </li>
                             }
                             @if (User.IzniVar(Modul.Stok, Islem.Goruntule))

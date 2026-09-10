@@ -1,4 +1,4 @@
-using OnMuhasebe.Core.Enums;
+﻿using OnMuhasebe.Core.Enums;
 
 namespace OnMuhasebe.Entities.ViewModels;
 
@@ -20,7 +20,14 @@ public class StokDetayViewModel
     public decimal ToplamCikis { get; set; }
     public decimal ToplamSayim { get; set; }
 
-    public decimal MevcutMiktar => ToplamGiris - ToplamCikis + ToplamSayim;
+    /// <summary>Alis faturalarindan gelen miktar.</summary>
+    public decimal ToplamFaturaGiris { get; set; }
+
+    /// <summary>Satis faturalariyla cikan miktar.</summary>
+    public decimal ToplamFaturaCikis { get; set; }
+
+    public decimal MevcutMiktar =>
+        ToplamGiris - ToplamCikis + ToplamSayim + ToplamFaturaGiris - ToplamFaturaCikis;
 
     /// <summary>Elde kalan malin alis maliyeti uzerinden degeri.</summary>
     public decimal StokDegeri => MevcutMiktar * AlisFiyati;
@@ -48,7 +55,4 @@ public class StokHareketSatirViewModel
     public StokHareketTipi HareketTipi { get; set; }
     public decimal         Miktar      { get; set; }
     public string?         Aciklama    { get; set; }
-
-    /// <summary>Faturadan doğan hareket mi, elle mi girildi.</summary>
-    public bool FaturadanMi { get; set; }
 }

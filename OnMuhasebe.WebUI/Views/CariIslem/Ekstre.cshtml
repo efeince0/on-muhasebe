@@ -1,0 +1,98 @@
+@model EkstreViewModel
+
+@{
+    ViewData["Title"] = $"Ekstre - {Model.Unvan}";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h3 class="mb-1">Hesap Ekstresi</h3>
+        <span class="text-muted"><code>@Model.CariKodu</code> · @Model.Unvan</span>
+    </div>
+    <div class="text-nowrap">
+        <a asp-controller="Cari" asp-action="Detay" asp-route-id="@Model.CariId"
+           class="btn btn-outline-secondary">Cari kartı</a>
+        <button type="button" class="btn btn-outline-primary" onclick="window.print()">Yazdır</button>
+    </div>
+</div>
+
+<form asp-action="Ekstre" method="get" class="row g-2 mb-4">
+    <input type="hidden" name="cariId" value="@Model.CariId" />
+
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Başlangıç</label>
+        <input type="date" name="baslangic" class="form-control"
+               value="@(Model.Baslangic?.ToString("yyyy-MM-dd"))" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Bitiş</label>
+        <input type="date" name="bitis" class="form-control"
+               value="@(Model.Bitis?.ToString("yyyy-MM-dd"))" />
+    </div>
+    <div class="col-md-3 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-outline-secondary">Getir</button>
+        <a asp-action="Ekstre" asp-route-cariId="@Model.CariId" class="btn btn-outline-secondary">Tümü</a>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-sm align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Tarih</th>
+                <th>Belge</th>
+                <th>Tür</th>
+                <th>Açıklama</th>
+                <th class="text-end">Borç</th>
+                <th class="text-end">Alacak</th>
+                <th class="text-end">Bakiye</th>
+            </tr>
+        </thead>
+        <tbody>
+            @* Devir satiri: acilis bakiyesi + donem basindan onceki tum hareketler. *@
+            <tr class="table-light">
+                <td colspan="4"><em>Devir bakiyesi</em></td>
+                <td></td>
+                <td></td>
+                <td class="text-end fw-semibold">@Model.DevirBakiye.ToString("N2") ₺</td>
+            </tr>
+
+            @if (Model.Satirlar.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Bu tarih aralığında hareket yok.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var satir in Model.Satirlar)
+                {
+                    <tr>
+                        <td>@satir.Tarih.ToString("dd.MM.yyyy")</td>
+                        <td><code>@satir.Belge</code></td>
+                        <td>@satir.Tur</td>
+                        <td class="text-muted small">@satir.Aciklama</td>
+                        <td class="text-end">@(satir.Borc == 0 ? "" : satir.Borc.ToString("N2"))</td>
+                        <td class="text-end">@(satir.Alacak == 0 ? "" : satir.Alacak.ToString("N2"))</td>
+                        <td class="text-end">@satir.YuruyenBakiye.ToString("N2")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot class="table-light">
+            <tr>
+                <th colspan="4" class="text-end">Dönem Toplamı</th>
+                <th class="text-end">@Model.ToplamBorc.ToString("N2") ₺</th>
+                <th class="text-end">@Model.ToplamAlacak.ToString("N2") ₺</th>
+                <th class="text-end">@Model.KapanisBakiye.ToString("N2") ₺</th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<p class="text-muted small">
+    Pozitif bakiye carinin bize borçlu olduğunu, negatif bakiye bizim cariye borçlu
+    olduğumuzu gösterir.
+</p>

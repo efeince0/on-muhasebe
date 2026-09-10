@@ -56,11 +56,15 @@ public class StokService : IStokService
             Aktif = s.Aktif,
 
 
-            // Giris artirir, Cikis azaltir. Sayim farki isaretli kaydedilir.
+            // Miktar kolonu yok: stok hareketleri ve fatura satirlarindan hesaplanir.
+            // Giris ve alis faturasi artirir, cikis ve satis faturasi azaltir.
+            // Sayim farki isaretli kaydedilir.
             MevcutMiktar =
                   s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Giris).Sum(h => h.Miktar)
                 - s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Cikis).Sum(h => h.Miktar)
                 + s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
+                + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
+                - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar)
         });
 
         // Kritik suzgeci hesaplanmis kolona bakiyor; projeksiyondan sonra uygulanmali.
@@ -164,6 +168,13 @@ public class StokService : IStokService
                     .Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim)
                     .Sum(h => h.Miktar),
 
+                ToplamFaturaGiris = s.FaturaSatirlari
+                    .Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Alis)
+                    .Sum(fs => fs.Miktar),
+                ToplamFaturaCikis = s.FaturaSatirlari
+                    .Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis)
+                    .Sum(fs => fs.Miktar),
+
                 HareketSayisi = s.Hareketler.Count(h => h.Aktif),
 
                 SonHareketler = s.Hareketler
@@ -177,8 +188,7 @@ public class StokService : IStokService
                         Tarih       = h.Tarih,
                         HareketTipi = h.HareketTipi,
                         Miktar      = h.Miktar,
-                        Aciklama    = h.Aciklama,
-                        FaturadanMi = h.FaturaId != null
+                        Aciklama    = h.Aciklama
                     })
                     .ToList(),
 
@@ -306,7 +316,9 @@ public class StokService : IStokService
             .Select(s =>
                   s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Giris).Sum(h => h.Miktar)
                 - s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Cikis).Sum(h => h.Miktar)
-                + s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar))
+                + s.Hareketler.Where(h => h.Aktif && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
+                + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
+                - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar))
             .FirstAsync();
     }
 }

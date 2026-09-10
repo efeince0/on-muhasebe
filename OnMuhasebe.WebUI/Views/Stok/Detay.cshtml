@@ -1,4 +1,4 @@
-@model StokDetayViewModel
+﻿@model StokDetayViewModel
 
 @{
     ViewData["Title"] = Model.StokAdi;
@@ -69,6 +69,16 @@
         <div class="border rounded p-3 h-100">
             <div class="text-muted small">Sayım Farkı</div>
             <div class="fs-5">@Model.ToplamSayim.ToString("N3")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Faturalı Giriş / Çıkış</div>
+            <div class="fs-5">
+                <span class="text-success">@Model.ToplamFaturaGiris.ToString("N3")</span>
+                <span class="text-muted">/</span>
+                <span class="text-danger">@Model.ToplamFaturaCikis.ToString("N3")</span>
+            </div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
@@ -166,7 +176,7 @@
                             <th>Hareket No</th>
                             <th>Tip</th>
                             <th class="text-end">Miktar</th>
-                            <th>Kaynak</th>
+                            <th>Açıklama</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -177,16 +187,7 @@
                             <td><code>@hareket.HareketNo</code></td>
                             <td>@hareket.HareketTipi</td>
                             <td class="text-end">@hareket.Miktar.ToString("N3")</td>
-                            <td>
-                                @if (hareket.FaturadanMi)
-                                {
-                                    <span class="badge text-bg-info">Fatura</span>
-                                }
-                                else
-                                {
-                                    <span class="badge text-bg-light text-dark">Elle</span>
-                                }
-                            </td>
+                            <td class="text-muted small">@hareket.Aciklama</td>
                         </tr>
                     }
                     </tbody>

@@ -1,4 +1,4 @@
-@model CariDetayViewModel
+﻿@model CariDetayViewModel
 
 @{
     ViewData["Title"] = Model.Unvan;
@@ -14,6 +14,12 @@
         }
     </div>
     <div class="text-nowrap">
+        @if (User.IzniVar(Modul.CariIslem, Islem.Goruntule))
+        {
+            <a asp-controller="CariIslem" asp-action="Ekstre" asp-route-cariId="@Model.Id"
+               class="btn btn-outline-dark">Ekstre</a>
+        }
+
         @if (User.IzniVar(Modul.Cari, Islem.Guncelle))
         {
             <a asp-action="Guncelle" asp-route-id="@Model.Id" class="btn btn-outline-primary">Düzenle</a>
@@ -90,15 +96,14 @@
     @* --- SON HAREKETLER --- *@
     <div class="col-lg-7">
         <div class="d-flex justify-content-between align-items-baseline mb-3">
-            <h5 class="mb-0">Son Hareketler</h5>
+            <h5 class="mb-0">Son Tahsilat / Ödemeler</h5>
             <span class="text-muted small">Toplam @Model.HareketSayisi hareket</span>
         </div>
 
         @if (Model.SonHareketler.Count == 0)
         {
-            <div class="alert alert-light border">
-                Bu cariye ait hareket yok. Hareketler fatura kesildiğinde veya
-                tahsilat/ödeme girildiğinde otomatik oluşur.
+            <div class="alert alert-light border mb-3">
+                Bu cariye ait tahsilat/ödeme kaydı yok.
             </div>
         }
         else
@@ -110,8 +115,8 @@
                             <th>Tarih</th>
                             <th>İşlem No</th>
                             <th>Tip</th>
+                            <th>Ödeme Şekli</th>
                             <th class="text-end">Tutar</th>
-                            <th>Kaynak</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,21 +126,24 @@
                             <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
                             <td><code>@hareket.IslemNo</code></td>
                             <td>@hareket.IslemTipi</td>
+                            <td>@hareket.OdemeSekli</td>
                             <td class="text-end">@hareket.Tutar.ToString("N2") ₺</td>
-                            <td>
-                                @if (hareket.FaturadanMi)
-                                {
-                                    <span class="badge text-bg-info">Fatura</span>
-                                }
-                                else
-                                {
-                                    <span class="badge text-bg-light text-dark">Elle</span>
-                                }
-                            </td>
                         </tr>
                     }
                     </tbody>
                 </table>
+            </div>
+        }
+
+        @if (User.IzniVar(Modul.CariIslem, Islem.Ekle))
+        {
+            <div class="mt-3">
+                <a asp-controller="CariIslem" asp-action="Ekle"
+                   asp-route-islemTipi="@IslemTipi.Tahsilat" asp-route-cariId="@Model.Id"
+                   class="btn btn-sm btn-success">Tahsilat Gir</a>
+                <a asp-controller="CariIslem" asp-action="Ekle"
+                   asp-route-islemTipi="@IslemTipi.Odeme" asp-route-cariId="@Model.Id"
+                   class="btn btn-sm btn-primary">Ödeme Gir</a>
             </div>
         }
     </div>

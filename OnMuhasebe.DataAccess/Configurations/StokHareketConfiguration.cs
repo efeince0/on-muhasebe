@@ -22,15 +22,11 @@ public class StokHareketConfiguration : IEntityTypeConfiguration<StokHareket>
         builder.Property(x => x.Aktif).HasDefaultValue(true);
 
         builder.HasIndex(x => x.HareketNo).IsUnique();
+        builder.HasIndex(x => new { x.StokId, x.Tarih });
 
         builder.HasOne(x => x.Stok)
                .WithMany(s => s.Hareketler)
                .HasForeignKey(x => x.StokId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(x => x.Fatura)
-               .WithMany(f => f.StokHareketleri)
-               .HasForeignKey(x => x.FaturaId)
                .OnDelete(DeleteBehavior.Restrict);
     }
 }

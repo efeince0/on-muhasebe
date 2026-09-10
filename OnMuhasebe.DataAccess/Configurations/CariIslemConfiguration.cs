@@ -22,16 +22,12 @@ public class CariIslemConfiguration : IEntityTypeConfiguration<CariIslem>
 
         builder.HasIndex(x => x.IslemNo).IsUnique();
 
+        // Ekstre ve bakiye sorgulari her zaman cari + tarih uzerinden gider.
+        builder.HasIndex(x => new { x.CariId, x.Tarih });
+
         builder.HasOne(x => x.Cari)
                .WithMany(c => c.CariIslemler)
                .HasForeignKey(x => x.CariId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        // Faturadan dogan tahsilat/odeme kayitlari icin izlenebilirlik.
-        // Fatura silinince hareket otomatik silinmez; islem katmani geri alir.
-        builder.HasOne(x => x.Fatura)
-               .WithMany(f => f.CariIslemler)
-               .HasForeignKey(x => x.FaturaId)
                .OnDelete(DeleteBehavior.Restrict);
     }
 }

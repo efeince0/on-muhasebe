@@ -1,4 +1,4 @@
-using OnMuhasebe.Core.Enums;
+﻿using OnMuhasebe.Core.Enums;
 
 namespace OnMuhasebe.Entities.ViewModels;
 
@@ -36,7 +36,4 @@ public class CariHareketSatirViewModel
     public decimal    Tutar      { get; set; }
     public OdemeSekli OdemeSekli { get; set; }
     public string?    Aciklama   { get; set; }
-
-    /// <summary>Faturadan doğan hareket mi, elle mi girildi.</summary>
-    public bool FaturadanMi { get; set; }
 }

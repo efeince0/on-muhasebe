@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OnMuhasebe.DataAccess.Context;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -30,6 +30,7 @@ public static class ServiceRegistration
 
         services.AddScoped<IKimlikService, KimlikService>();
         services.AddScoped<ICariService, CariService>();
+        services.AddScoped<ICariIslemService, CariIslemService>();
         services.AddScoped<IStokService, StokService>();
 
 

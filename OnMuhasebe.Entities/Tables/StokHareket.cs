@@ -11,8 +11,6 @@ public class StokHareket : BaseEntity
     public decimal         Miktar      { get; set; }
     public DateTime        Tarih       { get; set; }
     public string?         Aciklama    { get; set; }
-    public int?            FaturaId    { get; set; }
 
-    public Stok    Stok   { get; set; } = null!;
-    public Fatura? Fatura { get; set; }
+    public Stok Stok { get; set; } = null!;
 }

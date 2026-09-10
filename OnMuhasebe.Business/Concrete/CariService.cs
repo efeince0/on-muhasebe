@@ -58,15 +58,14 @@ public class CariService : ICariService
             Telefon  = c.Telefon,
             Aktif    = c.Aktif,
 
-            // Borc ve Odeme bakiyeyi artirir, Alacak ve Tahsilat azaltir.
+            // Bakiye kolonu yok: satis faturasi ve odeme borcu artirir,
+            // alis faturasi ve tahsilat azaltir. Pasif kayitlar sayilmaz.
             GuncelBakiye =
                   c.AcilisBakiye
-                + c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
-                    .Sum(i => i.Tutar)
-                - c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
-                    .Sum(i => i.Tutar)
+                + c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Satis).Sum(f => f.GenelToplam)
+                + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Odeme).Sum(i => i.Tutar)
+                - c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Alis).Sum(f => f.GenelToplam)
+                - c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Tahsilat).Sum(i => i.Tutar)
         });
 
         var kayitlar = await SiralamaUygula(projeksiyon, sirala, yon)
@@ -166,14 +165,15 @@ public class CariService : ICariService
                 Aktif        = c.Aktif,
 
                 AcilisBakiye = c.AcilisBakiye,
-                ToplamBorc   = c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
-                    .Sum(i => i.Tutar),
-                ToplamAlacak = c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
-                    .Sum(i => i.Tutar),
+                ToplamBorc =
+                      c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Satis).Sum(f => f.GenelToplam)
+                    + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Odeme).Sum(i => i.Tutar),
 
-                HareketSayisi = c.CariIslemler.Count(i => i.Aktif),
+                ToplamAlacak =
+                      c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Alis).Sum(f => f.GenelToplam)
+                    + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Tahsilat).Sum(i => i.Tutar),
+
+                HareketSayisi = c.CariIslemler.Count(i => i.Aktif) + c.Faturalar.Count(f => f.Aktif),
 
                 SonHareketler = c.CariIslemler
                     .Where(i => i.Aktif)
@@ -187,8 +187,7 @@ public class CariService : ICariService
                         IslemTipi   = i.IslemTipi,
                         Tutar       = i.Tutar,
                         OdemeSekli  = i.OdemeSekli,
-                        Aciklama    = i.Aciklama,
-                        FaturadanMi = i.FaturaId != null
+                        Aciklama    = i.Aciklama
                     })
                     .ToList(),
 
@@ -288,6 +287,22 @@ public class CariService : ICariService
         return (true, null);
     }
 
+    public async Task<List<CariSecimViewModel>> SecimListesiAsync()
+    {
+        // Acilir listede yalnizca aktif cariler; pasif hesaba yeni hareket girilmez.
+        return await _context.Cariler
+            .AsNoTracking()
+            .Where(c => c.Aktif)
+            .OrderBy(c => c.CariKodu)
+            .Select(c => new CariSecimViewModel
+            {
+                Id       = c.Id,
+                CariKodu = c.CariKodu,
+                Unvan    = c.Unvan
+            })
+            .ToListAsync();
+    }
+
     private async Task<decimal> BakiyeHesaplaAsync(int cariId)
     {
         return await _context.Cariler
@@ -295,12 +310,10 @@ public class CariService : ICariService
             .Where(c => c.Id == cariId)
             .Select(c =>
                   c.AcilisBakiye
-                + c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Borc || i.IslemTipi == IslemTipi.Odeme))
-                    .Sum(i => i.Tutar)
-                - c.CariIslemler
-                    .Where(i => i.Aktif && (i.IslemTipi == IslemTipi.Alacak || i.IslemTipi == IslemTipi.Tahsilat))
-                    .Sum(i => i.Tutar))
+                + c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Satis).Sum(f => f.GenelToplam)
+                + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Odeme).Sum(i => i.Tutar)
+                - c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Alis).Sum(f => f.GenelToplam)
+                - c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Tahsilat).Sum(i => i.Tutar))
             .FirstAsync();
     }
 }

@@ -1,0 +1,243 @@
+@model CariIslemListeSonucu
+
+@{
+    ViewData["Title"] = "Tahsilat / Ödeme";
+
+    var cariId      = ViewBag.CariId as int?;
+    var baslangic   = ViewBag.Baslangic as DateTime?;
+    var bitis       = ViewBag.Bitis as DateTime?;
+    var islemTipi   = ViewBag.IslemTipi as IslemTipi?;
+    var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
+    var sirala      = ViewBag.Sirala as string ?? "tarih";
+    var yon         = ViewBag.Yon as string ?? "desc";
+    var cariler     = ViewBag.Cariler as List<CariSecimViewModel> ?? [];
+
+    // Bir kolona tiklandiginda: ayni kolonsa yonu ters cevir, farkliysa artan baslat.
+    Func<string, string> yeniYon = kolon => (sirala == kolon && yon == "asc") ? "desc" : "asc";
+    Func<string, string> ok      = kolon => sirala != kolon ? "" : (yon == "asc" ? " ▲" : " ▼");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Tahsilat / Ödeme</h3>
+
+    @if (User.IzniVar(Modul.CariIslem, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni İşlem</a>
+    }
+</div>
+
+@* method="get": suzgec degerleri adres cubugunda kalir, sayfa paylasilabilir olur. *@
+<form asp-action="Liste" method="get" class="row g-2 mb-4">
+    <input type="hidden" name="sirala" value="@sirala" />
+    <input type="hidden" name="yon" value="@yon" />
+
+    <div class="col-md-4">
+        <select name="cariId" class="form-select">
+            <option value="">Tüm cariler</option>
+            @foreach (var cari in cariler)
+            {
+                <option value="@cari.Id" selected="@(cariId == cari.Id)">@cari.Etiket</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="baslangic" class="form-control"
+               value="@(baslangic?.ToString("yyyy-MM-dd"))" title="Başlangıç tarihi" />
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="bitis" class="form-control"
+               value="@(bitis?.ToString("yyyy-MM-dd"))" title="Bitiş tarihi" />
+    </div>
+
+    <div class="col-md-2">
+        <select name="islemTipi" class="form-select">
+            <option value="">Tümü</option>
+            <option value="@IslemTipi.Tahsilat" selected="@(islemTipi == IslemTipi.Tahsilat)">Tahsilat</option>
+            <option value="@IslemTipi.Odeme" selected="@(islemTipi == IslemTipi.Odeme)">Ödeme</option>
+        </select>
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-secondary flex-fill">Filtrele</button>
+        <a asp-action="Liste" class="btn btn-outline-secondary">Temizle</a>
+    </div>
+
+    <div class="col-12">
+        <div class="form-check">
+            @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+            <input type="hidden" name="sadeceAktif" value="false" />
+            <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+                   class="form-check-input" @(sadeceAktif ? "checked" : "") />
+            <label for="sadeceAktif" class="form-check-label small">Sadece aktif işlemler</label>
+        </div>
+    </div>
+</form>
+
+@if (Model.ToplamKayit == 0)
+{
+    <div class="text-center border rounded py-5">
+        <p class="text-muted mb-3">Bu filtreye uyan işlem bulunamadı.</p>
+        @if (User.IzniVar(Modul.CariIslem, Islem.Ekle))
+        {
+            <a asp-action="Ekle" class="btn btn-primary">İlk işlemi gir</a>
+        }
+    </div>
+}
+else
+{
+    @* Toplamlar sayfaya degil, suzgecin tamamina aittir. *@
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3">
+            <div class="border rounded p-3">
+                <div class="text-muted small">Toplam Tahsilat</div>
+                <div class="fs-5 text-success">@Model.ToplamTahsilat.ToString("N2") ₺</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="border rounded p-3">
+                <div class="text-muted small">Toplam Ödeme</div>
+                <div class="fs-5 text-danger">@Model.ToplamOdeme.ToString("N2") ₺</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="tarih" asp-route-yon="@yeniYon("tarih")">Tarih@(ok("tarih"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="no" asp-route-yon="@yeniYon("no")">İşlem No@(ok("no"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="cari" asp-route-yon="@yeniYon("cari")">Cari@(ok("cari"))</a>
+                    </th>
+                    <th>Tip</th>
+                    <th>Ödeme Şekli</th>
+                    <th class="text-end">
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="tutar" asp-route-yon="@yeniYon("tutar")">Tutar@(ok("tutar"))</a>
+                    </th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var islem in Model.Kayitlar)
+            {
+                <tr class="@(islem.Aktif ? "" : "text-muted")">
+                    <td>@islem.Tarih.ToString("dd.MM.yyyy")</td>
+                    <td><code>@islem.IslemNo</code></td>
+                    <td>
+                        <a asp-controller="Cari" asp-action="Detay" asp-route-id="@islem.CariId"
+                           class="text-decoration-none">@islem.Unvan</a>
+                        <div class="text-muted small">@islem.Aciklama</div>
+                    </td>
+                    <td>
+                        @if (islem.IslemTipi == IslemTipi.Tahsilat)
+                        {
+                            <span class="badge text-bg-success">Tahsilat</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-primary">Ödeme</span>
+                        }
+                        @if (!islem.Aktif)
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    <td>@islem.OdemeSekli</td>
+                    <td class="text-end">@islem.Tutar.ToString("N2") ₺</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Ekstre" asp-route-cariId="@islem.CariId"
+                           class="btn btn-sm btn-outline-secondary">Ekstre</a>
+
+                        @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                        @if (User.IzniVar(Modul.CariIslem, Islem.Guncelle))
+                        {
+                            <a asp-action="Guncelle" asp-route-id="@islem.Id"
+                               class="btn btn-sm btn-outline-primary">Düzenle</a>
+                        }
+
+                        @if (islem.Aktif && User.IzniVar(Modul.CariIslem, Islem.Sil))
+                        {
+                            <form asp-action="PasifeAl" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu işlem pasife alınacak ve cari bakiyesinden düşecek. Onaylıyor musunuz?');">
+                                <input type="hidden" name="id" value="@islem.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                            </form>
+                        }
+
+                        @if (!islem.Aktif && User.IzniVar(Modul.CariIslem, Islem.Guncelle))
+                        {
+                            <form asp-action="AktifYap" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@islem.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <p class="text-muted small mb-0">
+            Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+        </p>
+
+        @if (Model.ToplamSayfa > 1)
+        {
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif" asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
+                    </li>
+
+                    @for (var s = 1; s <= Model.ToplamSayfa; s++)
+                    {
+                        <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
+                            <a class="page-link" asp-action="Liste"
+                               asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                               asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                               asp-route-sadeceAktif="@sadeceAktif" asp-route-sirala="@sirala" asp-route-yon="@yon"
+                               asp-route-sayfa="@s">@s</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-cariId="@cariId" asp-route-baslangic="@(baslangic?.ToString("yyyy-MM-dd"))"
+                           asp-route-bitis="@(bitis?.ToString("yyyy-MM-dd"))" asp-route-islemTipi="@islemTipi"
+                           asp-route-sadeceAktif="@sadeceAktif" asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+}

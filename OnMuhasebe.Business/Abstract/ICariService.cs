@@ -22,6 +22,9 @@ public interface ICariService
     /// <summary>Yeni kayit icin bir sonraki bos kodu onerir. Garanti degil, yalnizca oneri.</summary>
     Task<string> SonrakiKodOnerAsync(string onEk = "C");
 
+    /// <summary>Acilir listeler icin aktif carilerin kod + unvan listesi.</summary>
+    Task<List<CariSecimViewModel>> SecimListesiAsync();
+
     /// <summary>Id = 0 ise ekler, degilse gunceller.</summary>
     Task<(bool Basarili, string? Hata)> KaydetAsync(CariFormViewModel model);
 
