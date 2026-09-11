@@ -19,16 +19,20 @@ public class AccountController : Controller
 
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Login()
+    public IActionResult Login(string? returnUrl = null)
     {
+        // Oturumu dusen kullanici hangi sayfadan geldiyse oraya donsun.
+        ViewBag.ReturnUrl = returnUrl;
         return View();
     }
 
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
     {
+        ViewBag.ReturnUrl = returnUrl;
+
         if (!ModelState.IsValid)
             return View(model);
 
@@ -61,9 +65,18 @@ public class AccountController : Controller
             new ClaimsPrincipal(kimlik),
             new AuthenticationProperties { IsPersistent = model.BeniHatirla });
 
+        // returnUrl adres cubugundan geliyor; disariya yonlendirme yapilmasin diye
+        // yalnizca kendi sitemizin goreli adresleri kabul ediliyor.
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return LocalRedirect(returnUrl);
+
         return RedirectToAction("Index", "Home");
     }
 
+    // Cikis oturumu sonlandiriyor, yani durum degistiriyor: GET olamaz.
+    // Link olsaydi sayfaya gomulu bir <img src="/Account/Logout"> kullaniciyi atardi.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -73,6 +86,8 @@ public class AccountController : Controller
     [AllowAnonymous]
     public IActionResult Yetkisiz()
     {
+        // Sayfa gorunse de istek basarili degil; loglar ve tarayici bunu bilmeli.
+        Response.StatusCode = StatusCodes.Status403Forbidden;
         return View();
     }
 }

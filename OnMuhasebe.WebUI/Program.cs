@@ -1,12 +1,23 @@
-using System.Globalization;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using OnMuhasebe.Business.DependencyInjection;
 using OnMuhasebe.Business.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// Varsayilan kural: her action giris ister. Istisnalar [AllowAnonymous] tasir.
+// Tersi (her action serbest, korumali olanlar isaretli) tek bir unutulmus
+// attribute'un ucu herkese acik birakmasi demek olurdu.
+var girisZorunlu = new AuthorizationPolicyBuilder()
+    .RequireAuthenticatedUser()
+    .Build();
+
+builder.Services.AddControllersWithViews(secenekler =>
+{
+    secenekler.Filters.Add(new AuthorizeFilter(girisZorunlu));
+});
 
 builder.Services.AddBusinessServices(
     builder.Configuration.GetConnectionString("OnMuhasebeDb")!);

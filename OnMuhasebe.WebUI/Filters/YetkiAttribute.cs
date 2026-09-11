@@ -21,15 +21,18 @@ public class YetkiAttribute : ActionFilterAttribute
     {
         var kullanici = context.HttpContext.User;
 
+        // Elle Login'e yonlendirmek yerine Challenge: cookie ara katmani
+        // LoginPath'e gonderirken gelinen adresi returnUrl olarak ekliyor.
         if (kullanici.Identity?.IsAuthenticated != true)
         {
-            context.Result = new RedirectToActionResult("Login", "Account", null);
+            context.Result = new ChallengeResult();
             return;
         }
 
+        // Forbid da ayni sekilde AccessDeniedPath'e gonderiyor.
         if (!kullanici.HasClaim("Izin", _gerekliIzin))
         {
-            context.Result = new RedirectToActionResult("Yetkisiz", "Account", null);
+            context.Result = new ForbidResult();
             return;
         }
 

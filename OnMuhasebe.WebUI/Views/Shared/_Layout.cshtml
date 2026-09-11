@@ -67,7 +67,11 @@
                                 <span class="nav-link text-muted">@User.FindFirst("AdSoyad")?.Value</span>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-danger" asp-controller="Account" asp-action="Logout">Çıkış</a>
+                                @* Cikis durum degistiriyor: link degil POST formu.
+                                   Form tag helper antiforgery token'i kendisi ekliyor. *@
+                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                    <button type="submit" class="nav-link text-danger border-0 bg-transparent">Çıkış</button>
+                                </form>
                             </li>
                         </ul>
                     }
