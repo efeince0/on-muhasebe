@@ -317,19 +317,25 @@ public class StokService : IStokService
             .OrderBy(s => s.StokKodu)
             .Select(s => new StokSecimViewModel
             {
-                Id       = s.Id,
-                StokKodu = s.StokKodu,
-                StokAdi  = s.StokAdi,
-                Birim    = s.Birim
+                Id          = s.Id,
+                StokKodu    = s.StokKodu,
+                StokAdi     = s.StokAdi,
+                Birim       = s.Birim,
+                AlisFiyati  = s.AlisFiyati,
+                SatisFiyati = s.SatisFiyati,
+                KdvOrani    = s.KdvOrani
             })
             .ToListAsync();
     }
 
     /// <summary>
-    /// Miktar formulunun tek sahibi burasi. Stok hareketleri servisi de
-    /// kendi kopyasini yazmak yerine bunu cagirir; formul degisirse tek yer degisir.
+    /// Miktar formulunun tek sahibi burasi. Stok hareketleri ve fatura servisleri
+    /// kendi kopyalarini yazmak yerine bunu cagirir; formul degisirse tek yer degisir.
+    /// haricHareketId / haricFaturaId: o kaydi hesaba katma. Mevcut bir hareketi
+    /// veya faturayi guncellerken "kendi etkisi disinda ne var" sorusunu cevaplar.
     /// </summary>
-    public async Task<decimal> MiktarGetirAsync(int stokId, int? haricHareketId = null)
+    public async Task<decimal> MiktarGetirAsync(
+        int stokId, int? haricHareketId = null, int? haricFaturaId = null)
     {
         return await _context.Stoklar
             .AsNoTracking()
@@ -338,8 +344,8 @@ public class StokService : IStokService
                   s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Giris).Sum(h => h.Miktar)
                 - s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Cikis).Sum(h => h.Miktar)
                 + s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
-                + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
-                - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar))
+                + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.FaturaId != haricFaturaId && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
+                - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.FaturaId != haricFaturaId && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar))
             .FirstAsync();
     }
 

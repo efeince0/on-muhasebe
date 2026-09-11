@@ -1,0 +1,318 @@
+@model FaturaFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Fatura" : "Fatura Güncelle";
+
+    var cariler = ViewBag.Cariler as List<CariSecimViewModel> ?? [];
+    var stoklar = ViewBag.Stoklar as List<StokSecimViewModel> ?? [];
+}
+
+<h3 class="mb-4">@ViewData["Title"]</h3>
+
+<form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post" id="faturaFormu">
+
+    <input type="hidden" asp-for="Id" />
+
+    @* Servisten gelen is kurali hatalari burada cikar (orn. "yetersiz stok"). *@
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    @* --- ÜST BİLGİ --- *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label asp-for="FaturaNo" class="form-label"></label>
+            <input asp-for="FaturaNo" class="form-control" />
+            <span asp-validation-for="FaturaNo" class="text-danger small"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="FaturaTipi" class="form-label"></label>
+            <select asp-for="FaturaTipi" class="form-select"
+                    asp-items="Html.GetEnumSelectList<FaturaTipi>()"></select>
+            <span asp-validation-for="FaturaTipi" class="text-danger small"></span>
+            <div class="form-text">Alışta stok artar, satışta azalır.</div>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="Tarih" class="form-label"></label>
+            <input asp-for="Tarih" type="date" class="form-control" />
+            <span asp-validation-for="Tarih" class="text-danger small"></span>
+        </div>
+
+        <div class="col-md-3">
+            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+            @if (!yeniKayit)
+            {
+                <label class="form-label d-block">&nbsp;</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Aktif" class="form-check-input" />
+                    <label asp-for="Aktif" class="form-check-label"></label>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="CariId" class="form-label"></label>
+            <select asp-for="CariId" class="form-select">
+                <option value="0">Seçiniz</option>
+                @foreach (var cari in cariler)
+                {
+                    <option value="@cari.Id">@cari.Etiket</option>
+                }
+            </select>
+            <span asp-validation-for="CariId" class="text-danger small"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Aciklama" class="form-label"></label>
+            <input asp-for="Aciklama" class="form-control" />
+            <span asp-validation-for="Aciklama" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* --- SATIR IZGARASI --- *@
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Satırlar</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="satirEkle">Satır Ekle</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle" id="satirTablosu">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:220px">Ürün</th>
+                    <th style="width:120px" class="text-end">Miktar</th>
+                    <th style="width:140px" class="text-end">Birim Fiyat</th>
+                    <th style="width:100px" class="text-end">KDV %</th>
+                    <th style="width:140px" class="text-end">Tutar</th>
+                    <th style="width:60px"></th>
+                </tr>
+            </thead>
+            <tbody id="satirlar">
+                @for (var i = 0; i < Model.Satirlar.Count; i++)
+                {
+                    <tr class="satir">
+                        <td>
+                            <input type="hidden" name="Satirlar[@i].Id" value="@Model.Satirlar[i].Id" />
+                            <select name="Satirlar[@i].StokId" class="form-select form-select-sm stok">
+                                <option value="0">Seçiniz</option>
+                                @foreach (var stok in stoklar)
+                                {
+                                    <option value="@stok.Id" selected="@(Model.Satirlar[i].StokId == stok.Id)">@stok.Etiket</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <input name="Satirlar[@i].Miktar" value="@Model.Satirlar[i].Miktar.ToString("N3")"
+                                   class="form-control form-control-sm text-end miktar" />
+                        </td>
+                        <td>
+                            <input name="Satirlar[@i].BirimFiyat" value="@Model.Satirlar[i].BirimFiyat.ToString("N2")"
+                                   class="form-control form-control-sm text-end fiyat" />
+                        </td>
+                        <td>
+                            <input name="Satirlar[@i].KdvOrani" value="@Model.Satirlar[i].KdvOrani.ToString("N0")"
+                                   class="form-control form-control-sm text-end kdv" />
+                        </td>
+                        <td class="text-end tutar">0,00</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger sil">&times;</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* --- TOPLAMLAR --- *@
+    <div class="row justify-content-end">
+        <div class="col-md-5">
+            <table class="table table-sm">
+                <tr>
+                    <th class="text-muted fw-normal">Ara Toplam</th>
+                    <td class="text-end" id="araToplam">0,00 ₺</td>
+                </tr>
+                <tr>
+                    <th class="text-muted fw-normal">Toplam KDV</th>
+                    <td class="text-end" id="toplamKdv">0,00 ₺</td>
+                </tr>
+                <tr class="table-light">
+                    <th>Genel Toplam</th>
+                    <td class="text-end fw-semibold fs-5" id="genelToplam">0,00 ₺</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="alert alert-light border small">
+        Ekrandaki toplamlar önizlemedir; kaydederken sunucu tutarları satırlardan
+        yeniden hesaplar. Fatura tipini değiştirirseniz satırlardaki fiyatlar
+        <b>olduğu gibi kalır</b> — gerekiyorsa elle güncelleyin.
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+    </div>
+</form>
+
+@* Stok fiyat ve KDV bilgileri: satir eklendiginde varsayilan doldurmak icin.
+   Her satirda sunucuya sormak yerine liste bir kez sayfaya gomuluyor.
+   Html.Raw burada guvenli: System.Text.Json varsayilan olarak < > & karakterlerini
+   kacisla yaziyor, yani urun adindaki bir </script> etiketi bloktan cikamiyor. *@
+<script id="stokVerisi" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(stoklar))
+</script>
+
+<template id="satirSablonu">
+    <tr class="satir">
+        <td>
+            <input type="hidden" name="Satirlar[__i__].Id" value="0" />
+            <select name="Satirlar[__i__].StokId" class="form-select form-select-sm stok">
+                <option value="0">Seçiniz</option>
+                @foreach (var stok in stoklar)
+                {
+                    <option value="@stok.Id">@stok.Etiket</option>
+                }
+            </select>
+        </td>
+        <td><input name="Satirlar[__i__].Miktar" value="1,000" class="form-control form-control-sm text-end miktar" /></td>
+        <td><input name="Satirlar[__i__].BirimFiyat" value="0,00" class="form-control form-control-sm text-end fiyat" /></td>
+        @* 20 yalnizca baslangic degeri; urun secilince kartin KDV orani yaziliyor. *@
+        <td><input name="Satirlar[__i__].KdvOrani" value="20" class="form-control form-control-sm text-end kdv" /></td>
+        <td class="text-end tutar">0,00</td>
+        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger sil">&times;</button></td>
+    </tr>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const ALIS     = '@((int)FaturaTipi.Alis)';
+            const YENI     = @(yeniKayit ? "true" : "false");
+            const stoklar  = JSON.parse(document.getElementById('stokVerisi').textContent);
+            const sablon   = document.getElementById('satirSablonu');
+            const govde    = document.getElementById('satirlar');
+            const tipAlan  = document.getElementById('FaturaTipi');
+            const noAlan   = document.getElementById('FaturaNo');
+
+            // Turkce giris: "1.234,56" ve "12,5" desteklenir. Virgul yoksa
+            // nokta ondalik ayraci sayilir, boylece "12.5" de dogru okunur.
+            function sayi(metin) {
+                if (!metin) return 0;
+                let t = String(metin).trim();
+                if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+                const d = parseFloat(t);
+                return isNaN(d) ? 0 : d;
+            }
+
+            function bicim(deger, basamak) {
+                return deger.toLocaleString('tr-TR', {
+                    minimumFractionDigits: basamak, maximumFractionDigits: basamak
+                });
+            }
+
+            // Model baglama Satirlar[0], Satirlar[1] ... seklinde ARDISIK indeks bekler.
+            // Aradan satir silinince numaralar bozulur, o yuzden her degisiklikte
+            // tum satirlarin alan adlari bastan yazilir.
+            function yenidenNumarala() {
+                govde.querySelectorAll('tr.satir').forEach((satir, i) => {
+                    satir.querySelectorAll('[name]').forEach(alan => {
+                        // Satirlar[3].Miktar veya Satirlar[__i__].Miktar -> Satirlar[i].Miktar
+                        alan.name = alan.name.replace(/^Satirlar\[[^\]]*\]/, 'Satirlar[' + i + ']');
+                    });
+                });
+            }
+
+            function hesapla() {
+                let araToplam = 0, toplamKdv = 0;
+
+                govde.querySelectorAll('tr.satir').forEach(satir => {
+                    const miktar = sayi(satir.querySelector('.miktar').value);
+                    const fiyat  = sayi(satir.querySelector('.fiyat').value);
+                    const kdv    = sayi(satir.querySelector('.kdv').value);
+
+                    const tutar = miktar * fiyat;
+                    satir.querySelector('.tutar').textContent = bicim(tutar, 2);
+
+                    araToplam += tutar;
+                    toplamKdv += tutar * kdv / 100;
+                });
+
+                document.getElementById('araToplam').textContent   = bicim(araToplam, 2) + ' ₺';
+                document.getElementById('toplamKdv').textContent   = bicim(toplamKdv, 2) + ' ₺';
+                document.getElementById('genelToplam').textContent = bicim(araToplam + toplamKdv, 2) + ' ₺';
+            }
+
+            // Urun secilince fiyat ve KDV karttan gelir; kullanici uzerine yazabilir.
+            function fiyatDoldur(satir) {
+                const id = parseInt(satir.querySelector('.stok').value, 10);
+                if (!id) return;
+
+                const stok = stoklar.find(s => s.Id === id);
+                if (!stok) return;
+
+                const fiyat = tipAlan.value === ALIS ? stok.AlisFiyati : stok.SatisFiyati;
+                satir.querySelector('.fiyat').value = bicim(fiyat, 2);
+                satir.querySelector('.kdv').value   = bicim(stok.KdvOrani, 0);
+            }
+
+            document.getElementById('satirEkle').addEventListener('click', function () {
+                const kopya = sablon.content.cloneNode(true);
+                govde.appendChild(kopya);
+                yenidenNumarala();
+                hesapla();
+            });
+
+            // Satirlar sonradan eklendigi icin olaylar govdeye baglaniyor (delegasyon).
+            govde.addEventListener('change', function (olay) {
+                const satir = olay.target.closest('tr.satir');
+                if (!satir) return;
+
+                if (olay.target.classList.contains('stok')) fiyatDoldur(satir);
+                hesapla();
+            });
+
+            govde.addEventListener('input', hesapla);
+
+            govde.addEventListener('click', function (olay) {
+                if (!olay.target.classList.contains('sil')) return;
+
+                const satirlar = govde.querySelectorAll('tr.satir');
+
+                // Dokuman kurali: faturada en az bir satir bulunmalidir.
+                if (satirlar.length <= 1) {
+                    alert('Faturada en az bir satır olmalıdır.');
+                    return;
+                }
+
+                olay.target.closest('tr.satir').remove();
+                yenidenNumarala();
+                hesapla();
+            });
+
+            // Fatura numarasi tipe gore uretiliyor; sayaci istemci bilemez.
+            tipAlan.addEventListener('change', async function () {
+                if (!YENI || noAlan.dataset.elleDegisti === '1') return;
+
+                try {
+                    const cevap = await fetch('@Url.Action("SonrakiNo")?faturaTipi=' + this.value);
+                    if (!cevap.ok) return;
+
+                    const veri = await cevap.json();
+                    noAlan.value = veri.faturaNo;
+                } catch {
+                    // Numara zaten bir oneri; alinamazsa mevcut deger kalir.
+                }
+            });
+
+            noAlan.addEventListener('input', function () {
+                this.dataset.elleDegisti = '1';
+            });
+
+            hesapla();
+        })();
+    </script>
+}

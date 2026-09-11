@@ -28,10 +28,11 @@ public interface IStokService
     Task<List<StokSecimViewModel>> SecimListesiAsync();
 
     /// <summary>
-    /// Bir kartin mevcut miktari. haricHareketId verilirse o hareket sayilmaz;
-    /// mevcut bir hareketi guncellerken "kendisi haric" miktara bakmak icin.
+    /// Bir kartin mevcut miktari. haricHareketId / haricFaturaId verilirse o kayit
+    /// sayilmaz; mevcut bir hareketi veya faturayi guncellerken "kendisi haric"
+    /// miktara bakmak icin.
     /// </summary>
-    Task<decimal> MiktarGetirAsync(int stokId, int? haricHareketId = null);
+    Task<decimal> MiktarGetirAsync(int stokId, int? haricHareketId = null, int? haricFaturaId = null);
 
     Task<(bool Basarili, string? Hata)> KaydetAsync(StokFormViewModel model);
 
