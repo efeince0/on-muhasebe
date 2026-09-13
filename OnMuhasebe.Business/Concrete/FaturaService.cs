@@ -144,6 +144,66 @@ public class FaturaService : IFaturaService
             .FirstOrDefaultAsync();
     }
 
+    public async Task<FaturaDetayViewModel?> DetayGetirAsync(int id)
+    {
+        return await _context.Faturalar
+            .AsNoTracking()
+            .Where(f => f.Id == id)
+            .Select(f => new FaturaDetayViewModel
+            {
+                Id         = f.Id,
+                FaturaNo   = f.FaturaNo,
+                FaturaTipi = f.FaturaTipi,
+                Tarih      = f.Tarih,
+                Aciklama   = f.Aciklama,
+                Aktif      = f.Aktif,
+
+                CariId       = f.CariId,
+                CariKodu     = f.Cari.CariKodu,
+                Unvan        = f.Cari.Unvan,
+                VergiDairesi = f.Cari.VergiDairesi,
+                VergiNo      = f.Cari.VergiNo,
+                Telefon      = f.Cari.Telefon,
+                Adres        = f.Cari.Adres,
+
+                AraToplam   = f.AraToplam,
+                ToplamKdv   = f.ToplamKdv,
+                GenelToplam = f.GenelToplam,
+
+                Satirlar = f.Satirlar
+                    .Where(sa => sa.Aktif)
+                    .OrderBy(sa => sa.Id)
+                    .Select(sa => new FaturaDetaySatirViewModel
+                    {
+                        StokKodu    = sa.Stok.StokKodu,
+                        StokAdi     = sa.Stok.StokAdi,
+                        Birim       = sa.Stok.Birim,
+                        Miktar      = sa.Miktar,
+                        BirimFiyat  = sa.BirimFiyat,
+                        KdvOrani    = sa.KdvOrani,
+                        SatirTutari = sa.SatirTutari
+                    })
+                    .ToList(),
+
+                OlusturmaTarihi  = f.OlusturmaTarihi,
+                GuncellemeTarihi = f.GuncellemeTarihi,
+
+                // Denetim alanlari yalnizca Id tutuyor; isim icin gezinme ozelligi
+                // eklemek yerine iliskili sorgu kullaniyoruz. Boylece Fatura varligi
+                // Kullanici'ya bagimli hale gelmiyor ve migration gerekmiyor.
+                OlusturanAdi = _context.Kullanicilar
+                    .Where(k => k.Id == f.OlusturanKullaniciId)
+                    .Select(k => k.AdSoyad)
+                    .FirstOrDefault(),
+
+                GuncelleyenAdi = _context.Kullanicilar
+                    .Where(k => k.Id == f.GuncelleyenKullaniciId)
+                    .Select(k => k.AdSoyad)
+                    .FirstOrDefault()
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<string> SonrakiFaturaNoOnerAsync(FaturaTipi faturaTipi)
     {
         var onEk = faturaTipi == FaturaTipi.Alis ? "ALF" : "SAT";

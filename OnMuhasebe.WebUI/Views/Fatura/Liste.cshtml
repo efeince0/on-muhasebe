@@ -162,7 +162,11 @@ else
             {
                 <tr class="@(fatura.Aktif ? "" : "text-muted")">
                     <td>@fatura.Tarih.ToString("dd.MM.yyyy")</td>
-                    <td><code>@fatura.FaturaNo</code></td>
+                    <td>
+                        <a asp-action="Detay" asp-route-id="@fatura.Id" class="text-decoration-none">
+                            <code>@fatura.FaturaNo</code>
+                        </a>
+                    </td>
                     <td>
                         @if (fatura.FaturaTipi == FaturaTipi.Alis)
                         {
@@ -186,6 +190,9 @@ else
                     <td class="text-end">@fatura.ToplamKdv.ToString("N2")</td>
                     <td class="text-end fw-semibold">@fatura.GenelToplam.ToString("N2") ₺</td>
                     <td class="text-end text-nowrap">
+                        <a asp-action="Detay" asp-route-id="@fatura.Id"
+                           class="btn btn-sm btn-outline-secondary">Detay</a>
+
                         @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
                         @if (User.IzniVar(Modul.Fatura, Islem.Guncelle))
                         {

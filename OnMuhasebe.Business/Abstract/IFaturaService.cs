@@ -22,6 +22,9 @@ public interface IFaturaService
     /// <summary>Guncelleme formunu doldurmak icin; satirlariyla birlikte. Bulunamazsa null.</summary>
     Task<FaturaFormViewModel?> FormGetirAsync(int id);
 
+    /// <summary>Detay ve yazdirma ekrani; satirlari ve denetim bilgisiyle. Bulunamazsa null.</summary>
+    Task<FaturaDetayViewModel?> DetayGetirAsync(int id);
+
     /// <summary>Tipe gore bir sonraki bos fatura numarasini onerir (ALF / SAT).</summary>
     Task<string> SonrakiFaturaNoOnerAsync(FaturaTipi faturaTipi);
 

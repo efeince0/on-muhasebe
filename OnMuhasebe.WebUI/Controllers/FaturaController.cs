@@ -48,6 +48,19 @@ public class FaturaController : Controller
         return View(liste);
     }
 
+    [Yetki(Modul.Fatura, Islem.Goruntule)]
+    public async Task<IActionResult> Detay(int id)
+    {
+        var model = await _faturaService.DetayGetirAsync(id);
+        if (model == null)
+        {
+            TempData["Hata"] = "Kayıt bulunamadı.";
+            return RedirectToAction(nameof(Liste));
+        }
+
+        return View(model);
+    }
+
     [HttpGet]
     [Yetki(Modul.Fatura, Islem.Ekle)]
     public async Task<IActionResult> Ekle(FaturaTipi faturaTipi = FaturaTipi.Satis, int? cariId = null)
