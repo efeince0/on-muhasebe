@@ -23,7 +23,7 @@ builder.Services.AddBusinessServices(
     builder.Configuration.GetConnectionString("OnMuhasebeDb")!);
 
 var app = builder.Build();
-await app.Services.BaslangicVerisiEkleAsync();
+await app.Services.VeritabaniniHazirlaAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

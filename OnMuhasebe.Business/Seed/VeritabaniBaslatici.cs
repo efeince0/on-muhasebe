@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OnMuhasebe.Core.Enums;
@@ -8,8 +8,9 @@ using OnMuhasebe.Entities.Tables;
 namespace OnMuhasebe.Business.Seed;
 
 /// <summary>
-/// Bos veritabanina baslangic kayitlarini ekler: roller, yetki matrisi, yonetici hesabi.
-/// Uygulama her acilista calisir ama veritabani doluysa hicbir sey yapmaz.
+/// Veritabanini calismaya hazir hale getirir: bekleyen migration'lari uygular,
+/// sonra bos veritabanina baslangic kayitlarini ekler (roller, yetki matrisi,
+/// yonetici hesabi). Her acilista calisir; veritabani doluysa tohumlama atlanir.
 /// </summary>
 public static class VeritabaniBaslatici
 {
@@ -17,12 +18,16 @@ public static class VeritabaniBaslatici
     private const string AdminKullaniciAdi = "admin";
     private const string AdminSifre        = "Admin!2345";
 
-    public static async Task BaslangicVerisiEkleAsync(this IServiceProvider services)
+    public static async Task VeritabaniniHazirlaAsync(this IServiceProvider services)
     {
         using var kapsam = services.CreateScope();
         var context = kapsam.ServiceProvider.GetRequiredService<OnMuhasebeContext>();
 
-        // Zaten doluysa dokunma. Uygulama her acilista bu metot cagrilir.
+        // Depoyu klonlayip dogrudan calistiran biri once "dotnet ef database update"
+        // demek zorunda kalmasin; bekleyen migration varsa burada uygulanir.
+        await context.Database.MigrateAsync();
+
+        // Zaten doluysa tohumlama atlanir.
         if (await context.Roller.AnyAsync())
             return;
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnMuhasebe.DataAccess.Context;
 
@@ -11,9 +12,11 @@ using OnMuhasebe.DataAccess.Context;
 namespace OnMuhasebe.DataAccess.Migrations
 {
     [DbContext(typeof(OnMuhasebeContext))]
-    partial class OnMuhasebeContextModelSnapshot : ModelSnapshot
+    [Migration("20260913180626_FaturaBaglantilariKaldirildi")]
+    partial class FaturaBaglantilariKaldirildi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
