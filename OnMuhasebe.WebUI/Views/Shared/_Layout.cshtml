@@ -61,6 +61,12 @@
                                     <a class="nav-link text-dark" asp-controller="Kullanici" asp-action="Liste">Kullanıcılar</a>
                                 </li>
                             }
+                            @if (User.IzniVar(Modul.Rol, Islem.Goruntule))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Rol" asp-action="Liste">Roller</a>
+                                </li>
+                            }
                         </ul>
                         <ul class="navbar-nav">
                             <li class="nav-item">

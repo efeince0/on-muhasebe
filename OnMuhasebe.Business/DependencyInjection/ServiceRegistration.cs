@@ -35,6 +35,7 @@ public static class ServiceRegistration
         services.AddScoped<IStokHareketService, StokHareketService>();
         services.AddScoped<IFaturaService, FaturaService>();
         services.AddScoped<IKullaniciService, KullaniciService>();
+        services.AddScoped<IRolService, RolService>();
 
 
 

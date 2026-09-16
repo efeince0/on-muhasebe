@@ -1,0 +1,70 @@
+@model YetkiMatrisiViewModel
+
+@{
+    ViewData["Title"] = $"{Model.RolAdi} — Yetkiler";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h3 class="mb-1">Yetki Matrisi</h3>
+        <span class="text-muted">@Model.RolAdi</span>
+    </div>
+    <a asp-action="Liste" class="btn btn-outline-secondary">Listeye dön</a>
+</div>
+
+<form asp-action="Matris" method="post">
+
+    <input type="hidden" asp-for="RolId" />
+    <input type="hidden" asp-for="RolAdi" />
+
+    @* Servisten gelen is kurali hatalari burada cikar. *@
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:240px">Modül</th>
+                    <th class="text-center" style="width:120px">Görüntüle</th>
+                    <th class="text-center" style="width:120px">Ekle</th>
+                    <th class="text-center" style="width:120px">Güncelle</th>
+                    <th class="text-center" style="width:120px">Sil</th>
+                </tr>
+            </thead>
+            <tbody>
+            @* @for kullaniliyor: model baglama Satirlar[i] seklinde ardisik indeks bekler. *@
+            @for (var i = 0; i < Model.Satirlar.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Model.Satirlar[i].ModulAdi
+                        <input type="hidden" asp-for="Satirlar[i].Modul" />
+                        <input type="hidden" asp-for="Satirlar[i].ModulAdi" />
+                    </td>
+                    <td class="text-center">
+                        <input asp-for="Satirlar[i].Goruntule" class="form-check-input" />
+                    </td>
+                    <td class="text-center">
+                        <input asp-for="Satirlar[i].Ekle" class="form-check-input" />
+                    </td>
+                    <td class="text-center">
+                        <input asp-for="Satirlar[i].Guncelle" class="form-check-input" />
+                    </td>
+                    <td class="text-center">
+                        <input asp-for="Satirlar[i].Sil" class="form-check-input" />
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-light border small">
+        <b>Görüntüle</b> izni olmayan bir modül menüde hiç görünmez.
+        Ekle, güncelle ve sil izinleri de sunucu tarafında ayrı ayrı kontrol edilir;
+        menüde düğmenin görünmemesi tek başına koruma sayılmaz.
+    </div>
+
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+</form>

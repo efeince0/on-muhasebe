@@ -1,0 +1,57 @@
+@model RolFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Rol" : "Rol Güncelle";
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "yonetim kaynagi"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="RolAdi" class="form-label"></label>
+            <input asp-for="RolAdi" class="form-control" />
+            <span asp-validation-for="RolAdi" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Aciklama" class="form-label"></label>
+            <textarea asp-for="Aciklama" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="Aciklama" class="text-danger small"></span>
+        </div>
+
+        @* Yeni rol zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
+        @if (!yeniKayit)
+        {
+            <div class="form-check mb-3">
+                <input asp-for="Aktif" class="form-check-input" />
+                <label asp-for="Aktif" class="form-check-label"></label>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-light border small">
+                Yeni rol izinsiz oluşur. Kaydettikten sonra listedeki
+                <b>Yetkiler</b> düğmesinden modül izinlerini tanımlayın.
+            </div>
+        }
+
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

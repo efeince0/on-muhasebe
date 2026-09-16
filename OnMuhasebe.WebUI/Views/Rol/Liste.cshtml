@@ -1,0 +1,105 @@
+@model List<RolListeViewModel>
+
+@{
+    ViewData["Title"] = "Roller ve Yetkiler";
+    var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1">Roller ve Yetkiler</h3>
+        <p class="text-muted mb-0 small">
+            Her rol, modül bazında hangi işlemleri yapabileceğini belirler.
+        </p>
+    </div>
+
+    @if (User.IzniVar(Modul.Rol, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni Rol</a>
+    }
+</div>
+
+<form asp-action="Liste" method="get" class="mb-4">
+    <div class="form-check">
+        @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+        <input type="hidden" name="sadeceAktif" value="false" />
+        <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+               class="form-check-input" @(sadeceAktif ? "checked" : "") onchange="this.form.submit()" />
+        <label for="sadeceAktif" class="form-check-label small">Sadece aktif roller</label>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Rol</th>
+                <th class="text-end">Aktif Kullanıcı</th>
+                <th class="text-end">İzin Sayısı</th>
+                <th>Durum</th>
+                <th class="text-end">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var rol in Model)
+        {
+            <tr class="@(rol.Aktif ? "" : "text-muted")">
+                <td>
+                    <span class="fw-semibold">@rol.RolAdi</span>
+                    @if (rol.YonetimKaynagi)
+                    {
+                        @* Dokuman [352]: bu rol kaybedilirse sistem yonetilemez hale gelir. *@
+                        <span class="badge text-bg-warning" title="Kullanıcı yönetebilen tek kaynak">Yönetim kaynağı</span>
+                    }
+                    <div class="text-muted small">@rol.Aciklama</div>
+                </td>
+                <td class="text-end">@rol.KullaniciSayisi</td>
+                <td class="text-end">@rol.IzinSayisi</td>
+                <td>
+                    @if (rol.Aktif)
+                    {
+                        <span class="badge text-bg-success">Aktif</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary">Pasif</span>
+                    }
+                </td>
+                <td class="text-end text-nowrap">
+                    @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                    @if (User.IzniVar(Modul.Rol, Islem.Guncelle))
+                    {
+                        <a asp-action="Matris" asp-route-id="@rol.Id"
+                           class="btn btn-sm btn-outline-dark">Yetkiler</a>
+
+                        <a asp-action="Guncelle" asp-route-id="@rol.Id"
+                           class="btn btn-sm btn-outline-primary">Düzenle</a>
+                    }
+
+                    @if (rol.Aktif && !rol.YonetimKaynagi && User.IzniVar(Modul.Rol, Islem.Sil))
+                    {
+                        <form asp-action="PasifeAl" method="post" class="d-inline"
+                              onsubmit="return confirm('Bu rol pasife alınacak. Roldeki kullanıcılar hiçbir modüle erişemez. Onaylıyor musunuz?');">
+                            <input type="hidden" name="id" value="@rol.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                        </form>
+                    }
+
+                    @if (!rol.Aktif && User.IzniVar(Modul.Rol, Islem.Guncelle))
+                    {
+                        <form asp-action="AktifYap" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@rol.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="alert alert-light border small">
+    İzinler kullanıcı giriş yaptığında bir kez çözülüp oturum çerezine yazılır.
+    Bu yüzden yetki değişiklikleri, ilgili kullanıcı <b>yeniden giriş yaptığında</b> etkili olur.
+</div>
