@@ -35,12 +35,21 @@ WebUI projesi DataAccess'e referans vermez; veri erişimi Business servisleri ü
 | Stok | Liste, form, detay | Tamam |
 | Stok İşlemleri | Giriş / çıkış / sayım listesi ve formu | Tamam |
 | Fatura | Liste, satır ızgaralı form, detay ve yazdırma | Tamam |
-| Kullanıcı Yönetimi | Liste, form, şifre sıfırlama | Devam ediyor |
-| Rol ve İzin | Yetki matrisi ekranı | Planlandı |
+| Kullanıcı Yönetimi | Liste, form, şifre sıfırlama, şifre değiştirme | Tamam |
+| Rol ve İzin | Rol listesi, form, yetki matrisi | Tamam |
 
-Yetkilendirme çalışıyor: dört rol (Yönetici, Muhasebe, Depo, Görüntüleyici), modül ve işlem
-bazında izinler. İzinler girişte bir kez claim'lere çözülür; kontrol hem menüde hem sunucuda
-(`[Yetki]` filtresi) yapılır.
+---
+
+## Yetkilendirme
+
+Dört rol (Yönetici, Muhasebe, Depo, Görüntüleyici) ve yedi modül × dört işlem izni.
+
+- İzinler girişte bir kez claim'lere çözülür; her istekte veritabanına sorulmaz.
+- Kontrol iki yerde: menü görünürlüğü (görgü kuralı) ve `[Yetki]` filtresi (asıl koruma).
+- Varsayılan politika **giriş şartı**; istisnalar `[AllowAnonymous]` taşır.
+- Yetki matrisi ekranından değiştirilen izinler, kullanıcı **yeniden giriş yaptığında** etkili olur.
+- Kullanıcı yönetebilen en az bir aktif hesap her zaman korunur: son yönetici pasife
+  alınamaz, rolü değiştirilemez, rolünün yetkisi kaldırılamaz.
 
 ---
 
@@ -82,13 +91,32 @@ dotnet run --project OnMuhasebe.WebUI
 ```
 
 Uygulama ilk açılışta bekleyen migration'ları uygular, rolleri, izin matrisini ve bir
-yönetici hesabı oluşturur:
+yönetici hesabı oluşturur. `DemoVerisi:Ekle` ayarı açıksa örnek cari, stok, fatura,
+hareket ve kullanıcı kayıtlarını da ekler.
 
-```
-admin / Admin!2345
+### Hesaplar
+
+| Kullanıcı | Şifre | Rol |
+|---|---|---|
+| `admin` | `Admin!2345` | Yönetici |
+| `muhasebe` | `Muhasebe123` | Muhasebe |
+| `depo` | `Depo12345` | Depo |
+| `bakis` | `Bakis12345` | Görüntüleyici |
+
+Yönetici dışındaki hesaplar yalnızca demo verisiyle birlikte oluşur.
+Gerçek kurulumda `DemoVerisi:Ekle` değerini `false` yapın ve ilk girişten sonra
+yönetici şifresini değiştirin.
+
+### Veritabanı betiği
+
+Şemanın tamamını üreten SQL betiği:
+
+```bash
+dotnet ef migrations script --idempotent --project OnMuhasebe.DataAccess --startup-project OnMuhasebe.WebUI --output veritabani.sql
 ```
 
-İlk girişten sonra şifre değiştirilmelidir.
+`--idempotent` betiği tekrar tekrar çalıştırılabilir yapar: her migration'ın uygulanıp
+uygulanmadığını kontrol edip yalnızca eksikleri işler.
 
 ---
 
@@ -100,3 +128,4 @@ admin / Admin!2345
 | Satır tutarı | "Miktar × birim fiyat (+KDV)" | KDV hariç | Dokümanın kendi `AraToplam` tanımı ("KDV hariç satır toplamları") ancak böyle tutarlı olur. |
 | Vergi no | Tabloda kısıt yok | Filtreli benzersiz indeks | İş kuralları bölümü "vergi no benzersiz olmalıdır" diyor. SQL Server unique index'te NULL'ları eşit saydığı için boş olanlar filtre dışı bırakıldı. |
 | Pasife alma | "Pasife alınmalıdır" | Bakiye/stok engel değil, uyarı | Doküman pasife almayı çıkış yolu olarak tanımlıyor; engellemek o yolu kapatırdı. |
+| Son yönetici | "Son yönetici silinememelidir" | Rol değiştirme ve rol yetkisi de korunur | Rolü değiştirmek de o hesabı yönetici olmaktan çıkarır; kural rol adına değil `Kullanici.Guncelle` yetkisine bağlandı. |

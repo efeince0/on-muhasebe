@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OnMuhasebe.Core.Enums;
 using OnMuhasebe.DataAccess.Context;
@@ -38,6 +39,12 @@ public static class VeritabaniBaslatici
         context.RolIzinleri.AddRange(IzinleriOlustur(roller));
         context.Kullanicilar.Add(YoneticiOlustur(roller));
         await context.SaveChangesAsync();
+
+        // Dokuman 7. maddesi ornek verilerle dolu bir demo istiyor.
+        // Gercek kuruluma veri bulasmasin diye ayara bagli.
+        var ayarlar = kapsam.ServiceProvider.GetRequiredService<IConfiguration>();
+        if (ayarlar.GetValue("DemoVerisi:Ekle", false))
+            await DemoVerisi.EkleAsync(context);
     }
 
     // ─────────────────────────────────────────────────────────────
