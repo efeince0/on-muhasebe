@@ -1,0 +1,45 @@
+@model SifreDegistirViewModel
+
+@{
+    ViewData["Title"] = "Şifre Değiştir";
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+
+    <h3 class="mb-4">Şifre Değiştir</h3>
+
+    <form asp-action="SifreDegistir" method="post">
+
+        @* Hangi hesabin sifresinin degistigi formdan degil cookie'den okunur. *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="MevcutSifre" class="form-label"></label>
+            <input asp-for="MevcutSifre" class="form-control" autocomplete="current-password" />
+            <span asp-validation-for="MevcutSifre" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="YeniSifre" class="form-label"></label>
+            <input asp-for="YeniSifre" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="YeniSifre" class="text-danger small"></span>
+            <div class="form-text">@SifreKurali.Mesaj</div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="YeniSifreTekrar" class="form-label"></label>
+            <input asp-for="YeniSifreTekrar" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="YeniSifreTekrar" class="text-danger small"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Değiştir</button>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

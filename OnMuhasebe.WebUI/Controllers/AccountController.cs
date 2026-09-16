@@ -12,9 +12,12 @@ public class AccountController : Controller
 {
     private readonly IKimlikService _kimlikService;
 
-    public AccountController(IKimlikService kimlikService)
+    private readonly IKullaniciService _kullaniciService;
+
+    public AccountController(IKimlikService kimlikService, IKullaniciService kullaniciService)
     {
-        _kimlikService = kimlikService;
+        _kimlikService    = kimlikService;
+        _kullaniciService = kullaniciService;
     }
 
     [HttpGet]
@@ -81,6 +84,39 @@ public class AccountController : Controller
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction(nameof(Login));
+    }
+
+    // Her kullanici kendi sifresini degistirebilir; ayri bir modul izni gerekmez.
+    // Varsayilan politika zaten giris sarti koyuyor.
+    [HttpGet]
+    public IActionResult SifreDegistir()
+    {
+        return View(new SifreDegistirViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SifreDegistir(SifreDegistirViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        // Kimlik cookie'den okunuyor; formdan gelen bir Id'ye guvenilmez,
+        // yoksa baskasinin sifresini degistirmek mumkun olurdu.
+        var idMetni = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idMetni, out var kullaniciId))
+            return RedirectToAction(nameof(Login));
+
+        var (basarili, hata) = await _kullaniciService.SifreDegistirAsync(kullaniciId, model);
+
+        if (!basarili)
+        {
+            ModelState.AddModelError("", hata!);
+            return View(model);
+        }
+
+        TempData["Basarili"] = "Şifreniz değiştirildi.";
+        return RedirectToAction("Index", "Home");
     }
 
     [AllowAnonymous]

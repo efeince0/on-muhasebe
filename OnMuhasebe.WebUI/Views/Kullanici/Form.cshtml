@@ -1,0 +1,96 @@
+@model KullaniciFormViewModel
+
+@{
+    var yeniKayit = Model.Id == 0;
+    ViewData["Title"] = yeniKayit ? "Yeni Kullanıcı" : "Kullanıcı Güncelle";
+
+    var roller = ViewBag.Roller as List<RolSecimViewModel> ?? [];
+}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <h3 class="mb-4">@ViewData["Title"]</h3>
+
+    <form asp-action="@(yeniKayit ? "Ekle" : "Guncelle")" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        @* Servisten gelen is kurali hatalari burada cikar (orn. "son yonetici"). *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <label asp-for="KullaniciAdi" class="form-label"></label>
+                <input asp-for="KullaniciAdi" class="form-control" autocomplete="off" />
+                <span asp-validation-for="KullaniciAdi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="AdSoyad" class="form-label"></label>
+                <input asp-for="AdSoyad" class="form-control" />
+                <span asp-validation-for="AdSoyad" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Eposta" class="form-label"></label>
+                <input asp-for="Eposta" class="form-control" />
+                <span asp-validation-for="Eposta" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="RolId" class="form-label"></label>
+                <select asp-for="RolId" class="form-select">
+                    <option value="0">Seçiniz</option>
+                    @foreach (var rol in roller)
+                    {
+                        <option value="@rol.Id" title="@rol.Aciklama">@rol.RolAdi</option>
+                    }
+                </select>
+                <span asp-validation-for="RolId" class="text-danger small"></span>
+                <div class="form-text">Kullanıcının erişebileceği modülleri rol belirler.</div>
+            </div>
+
+            @* Sifre yalnizca yeni kayitta burada belirlenir. Mevcut kaydin sifresi
+               bu formdan degistirilmez; ayri "Şifre Sıfırla" ekrani var. *@
+            @if (yeniKayit)
+            {
+                <div class="col-md-6">
+                    <label asp-for="Sifre" class="form-label"></label>
+                    <input asp-for="Sifre" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Sifre" class="text-danger small"></span>
+                    <div class="form-text">@SifreKurali.Mesaj</div>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input asp-for="Aktif" class="form-check-input" />
+                        <label asp-for="Aktif" class="form-check-label"></label>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        @if (!yeniKayit)
+        {
+            <div class="alert alert-light border mt-4 small mb-0">
+                Şifreyi buradan değiştiremezsiniz. Listedeki <b>Şifre Sıfırla</b> düğmesini kullanın.
+            </div>
+        }
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a asp-action="Liste" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+
+  </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

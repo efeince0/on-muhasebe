@@ -1,0 +1,186 @@
+@model SayfaliListe<KullaniciListeViewModel>
+
+@{
+    ViewData["Title"] = "Kullanıcılar";
+
+    var arama       = ViewBag.Arama as string;
+    var sadeceAktif = ViewBag.SadeceAktif as bool? ?? true;
+    var sirala      = ViewBag.Sirala as string ?? "kullaniciAdi";
+    var yon         = ViewBag.Yon as string ?? "asc";
+
+    // Bir kolona tiklandiginda: ayni kolonsa yonu ters cevir, farkliysa artan baslat.
+    Func<string, string> yeniYon = kolon => (sirala == kolon && yon == "asc") ? "desc" : "asc";
+    Func<string, string> ok      = kolon => sirala != kolon ? "" : (yon == "asc" ? " ▲" : " ▼");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Kullanıcılar</h3>
+
+    @if (User.IzniVar(Modul.Kullanici, Islem.Ekle))
+    {
+        <a asp-action="Ekle" class="btn btn-primary">Yeni Kullanıcı</a>
+    }
+</div>
+
+@* method="get": suzgec degerleri adres cubugunda kalir, sayfa paylasilabilir olur. *@
+<form asp-action="Liste" method="get" class="row g-2 mb-4">
+    <input type="hidden" name="sirala" value="@sirala" />
+    <input type="hidden" name="yon" value="@yon" />
+
+    <div class="col-md-5">
+        <input name="arama" value="@arama" class="form-control"
+               placeholder="Kullanıcı adı veya ad soyad ara..." />
+    </div>
+    <div class="col-md-3 d-flex align-items-center">
+        <div class="form-check">
+            @* Isaretlenmemis onay kutusu hicbir sey gondermez; gizli alan "false" degerini garantiler. *@
+            <input type="hidden" name="sadeceAktif" value="false" />
+            <input type="checkbox" name="sadeceAktif" value="true" id="sadeceAktif"
+                   class="form-check-input" @(sadeceAktif ? "checked" : "") />
+            <label for="sadeceAktif" class="form-check-label">Sadece aktifler</label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Ara</button>
+    </div>
+    <div class="col-md-2">
+        <a asp-action="Liste" class="btn btn-outline-secondary w-100">Temizle</a>
+    </div>
+</form>
+
+@if (Model.ToplamKayit == 0)
+{
+    <div class="text-center border rounded py-5">
+        <p class="text-muted mb-3">Bu filtreye uyan kullanıcı bulunamadı.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="kullaniciAdi" asp-route-yon="@yeniYon("kullaniciAdi")">Kullanıcı Adı@(ok("kullaniciAdi"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="adSoyad" asp-route-yon="@yeniYon("adSoyad")">Ad Soyad@(ok("adSoyad"))</a>
+                    </th>
+                    <th>E-posta</th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="rol" asp-route-yon="@yeniYon("rol")">Rol@(ok("rol"))</a>
+                    </th>
+                    <th>
+                        <a class="text-decoration-none text-reset" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="sonGiris" asp-route-yon="@yeniYon("sonGiris")">Son Giriş@(ok("sonGiris"))</a>
+                    </th>
+                    <th>Durum</th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var kullanici in Model.Kayitlar)
+            {
+                <tr class="@(kullanici.Aktif ? "" : "text-muted")">
+                    <td><code>@kullanici.KullaniciAdi</code></td>
+                    <td>@kullanici.AdSoyad</td>
+                    <td>@(kullanici.Eposta ?? "—")</td>
+                    <td>
+                        @kullanici.RolAdi
+                        @if (kullanici.SonYonetici)
+                        {
+                            @* Dokuman [352]: bu hesap kaybedilirse sistem yoneticisiz kalir. *@
+                            <span class="badge text-bg-warning" title="Kullanıcı yönetebilen son aktif hesap">Son yönetici</span>
+                        }
+                    </td>
+                    <td>
+                        @(kullanici.SonGiris?.ToString("dd.MM.yyyy HH:mm") ?? "—")
+                    </td>
+                    <td>
+                        @if (kullanici.Aktif)
+                        {
+                            <span class="badge text-bg-success">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </td>
+                    <td class="text-end text-nowrap">
+                        @* Butonlarin gizlenmesi gorgu kuralidir; asil koruma controller'daki [Yetki]. *@
+                        @if (User.IzniVar(Modul.Kullanici, Islem.Guncelle))
+                        {
+                            <a asp-action="Guncelle" asp-route-id="@kullanici.Id"
+                               class="btn btn-sm btn-outline-primary">Düzenle</a>
+
+                            <a asp-action="SifreSifirla" asp-route-id="@kullanici.Id"
+                               class="btn btn-sm btn-outline-secondary">Şifre Sıfırla</a>
+                        }
+
+                        @if (kullanici.Aktif && !kullanici.SonYonetici && User.IzniVar(Modul.Kullanici, Islem.Sil))
+                        {
+                            <form asp-action="PasifeAl" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bu kullanıcı pasife alınacak, giriş yapamayacak. Onaylıyor musunuz?');">
+                                <input type="hidden" name="id" value="@kullanici.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Pasife Al</button>
+                            </form>
+                        }
+
+                        @if (!kullanici.Aktif && User.IzniVar(Modul.Kullanici, Islem.Guncelle))
+                        {
+                            <form asp-action="AktifYap" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@kullanici.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">Aktif Et</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <p class="text-muted small mb-0">
+            Toplam @Model.ToplamKayit kayıt · Sayfa @Model.SayfaNo / @Model.ToplamSayfa
+        </p>
+
+        @if (Model.ToplamSayfa > 1)
+        {
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.OncekiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo - 1)">Önceki</a>
+                    </li>
+
+                    @for (var s = 1; s <= Model.ToplamSayfa; s++)
+                    {
+                        <li class="page-item @(s == Model.SayfaNo ? "active" : "")">
+                            <a class="page-link" asp-action="Liste"
+                               asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                               asp-route-sirala="@sirala" asp-route-yon="@yon"
+                               asp-route-sayfa="@s">@s</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.SonrakiVar ? "" : "disabled")">
+                        <a class="page-link" asp-action="Liste"
+                           asp-route-arama="@arama" asp-route-sadeceAktif="@sadeceAktif"
+                           asp-route-sirala="@sirala" asp-route-yon="@yon"
+                           asp-route-sayfa="@(Model.SayfaNo + 1)">Sonraki</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+}
