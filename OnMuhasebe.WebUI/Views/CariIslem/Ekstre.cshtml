@@ -2,21 +2,55 @@
 
 @{
     ViewData["Title"] = $"Ekstre - {Model.Unvan}";
+
+    var donem = (Model.Baslangic, Model.Bitis) switch
+    {
+        (null, null) => "Tüm hareketler",
+        (not null, null) => $"{Model.Baslangic!.Value:dd.MM.yyyy} tarihinden itibaren",
+        (null, not null) => $"{Model.Bitis!.Value:dd.MM.yyyy} tarihine kadar",
+        _ => $"{Model.Baslangic!.Value:dd.MM.yyyy} - {Model.Bitis!.Value:dd.MM.yyyy}"
+    };
 }
+
+@* Razor'da @media Razor ifadesi sanilir; CSS'e gecmesi icin @@media yazilir. *@
+<style>
+    @@media print {
+        /* Menu, suzgec formu, dugmeler ve alt bilgi kagida basilmaz. */
+        header, footer, .yazdirma-disi { display: none !important; }
+
+        body { background: #fff; }
+        a { text-decoration: none; color: #000; }
+
+        /* Ekranda yatay kaydirma saglayan sarmalayici, kagitta tasan kismi
+           kirpiyor. Yazdirirken kaydirma diye bir sey yok; icerik gorunur olmali. */
+        .table-responsive { overflow: visible !important; }
+
+        /* Yedi kolon A4 dikeye ancak boyle siginiyor. */
+        table { font-size: 11px; }
+        th, td { padding: 4px 6px !important; }
+    }
+
+    /* Ekranda da cikitida da tutar ile para birimi ayni satirda kalsin. */
+    .tutar { white-space: nowrap; }
+</style>
 
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
         <h3 class="mb-1">Hesap Ekstresi</h3>
         <span class="text-muted"><code>@Model.CariKodu</code> · @Model.Unvan</span>
+
+        @* Suzgec formu cikitida gizlendigi icin donem bilgisi burada yaziyor. *@
+        <div class="text-muted small">@donem</div>
     </div>
-    <div class="text-nowrap">
+
+    <div class="text-nowrap yazdirma-disi">
         <a asp-controller="Cari" asp-action="Detay" asp-route-id="@Model.CariId"
            class="btn btn-outline-secondary">Cari kartı</a>
         <button type="button" class="btn btn-outline-primary" onclick="window.print()">Yazdır</button>
     </div>
 </div>
 
-<form asp-action="Ekstre" method="get" class="row g-2 mb-4">
+<form asp-action="Ekstre" method="get" class="row g-2 mb-4 yazdirma-disi">
     <input type="hidden" name="cariId" value="@Model.CariId" />
 
     <div class="col-md-3">
@@ -54,7 +88,7 @@
                 <td colspan="4"><em>Devir bakiyesi</em></td>
                 <td></td>
                 <td></td>
-                <td class="text-end fw-semibold">@Model.DevirBakiye.ToString("N2") ₺</td>
+                <td class="text-end fw-semibold tutar">@Model.DevirBakiye.ToString("N2") ₺</td>
             </tr>
 
             @if (Model.Satirlar.Count == 0)
@@ -70,13 +104,13 @@
                 @foreach (var satir in Model.Satirlar)
                 {
                     <tr>
-                        <td>@satir.Tarih.ToString("dd.MM.yyyy")</td>
+                        <td class="text-nowrap">@satir.Tarih.ToString("dd.MM.yyyy")</td>
                         <td><code>@satir.Belge</code></td>
-                        <td>@satir.Tur</td>
+                        <td class="text-nowrap">@satir.Tur</td>
                         <td class="text-muted small">@satir.Aciklama</td>
-                        <td class="text-end">@(satir.Borc == 0 ? "" : satir.Borc.ToString("N2"))</td>
-                        <td class="text-end">@(satir.Alacak == 0 ? "" : satir.Alacak.ToString("N2"))</td>
-                        <td class="text-end">@satir.YuruyenBakiye.ToString("N2")</td>
+                        <td class="text-end tutar">@(satir.Borc == 0 ? "" : satir.Borc.ToString("N2"))</td>
+                        <td class="text-end tutar">@(satir.Alacak == 0 ? "" : satir.Alacak.ToString("N2"))</td>
+                        <td class="text-end tutar">@satir.YuruyenBakiye.ToString("N2")</td>
                     </tr>
                 }
             }
@@ -84,9 +118,9 @@
         <tfoot class="table-light">
             <tr>
                 <th colspan="4" class="text-end">Dönem Toplamı</th>
-                <th class="text-end">@Model.ToplamBorc.ToString("N2") ₺</th>
-                <th class="text-end">@Model.ToplamAlacak.ToString("N2") ₺</th>
-                <th class="text-end">@Model.KapanisBakiye.ToString("N2") ₺</th>
+                <th class="text-end tutar">@Model.ToplamBorc.ToString("N2") ₺</th>
+                <th class="text-end tutar">@Model.ToplamAlacak.ToString("N2") ₺</th>
+                <th class="text-end tutar">@Model.KapanisBakiye.ToString("N2") ₺</th>
             </tr>
         </tfoot>
     </table>
