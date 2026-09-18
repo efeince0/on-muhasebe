@@ -50,6 +50,12 @@ Dört rol (Yönetici, Muhasebe, Depo, Görüntüleyici) ve yedi modül × dört 
 - Yetki matrisi ekranından değiştirilen izinler, kullanıcı **yeniden giriş yaptığında** etkili olur.
 - Kullanıcı yönetebilen en az bir aktif hesap her zaman korunur: son yönetici pasife
   alınamaz, rolü değiştirilemez, rolünün yetkisi kaldırılamaz.
+- Rolü pasife alınmış kullanıcı giriş yapamaz.
+- Aktiflik durumu **formdan** değiştirilemez; yalnızca listedeki *Pasife Al* (`Sil` izni)
+  ve *Aktif Yap* (`Güncelle` izni) düğmeleriyle değişir. Aksi hâlde `Güncelle` izni olan
+  biri formdaki kutucukla `Sil` iznini atlayabilirdi.
+- `Ekle` ve `Güncelle` POST'ları aynı servis metodunu çağırır; hangisinin çalışacağını
+  `Id` belirler. Formdan gelen `Id` ile action'ın izni uyuşmazsa istek reddedilir.
 
 ---
 
@@ -120,6 +126,25 @@ uygulanmadığını kontrol edip yalnızca eksikleri işler.
 
 ---
 
+## Loglama
+
+Doküman "teknik hatalar loglanmalı" diyor. Harici bir pakete (Serilog vb.) ihtiyaç
+duymadan bunu karşılamak için `OnMuhasebe.WebUI/Logging/DosyaLoggerProvider.cs`
+adında küçük, bağımlılıksız bir `ILoggerProvider` yazıldı:
+
+- Konsolun yanına, `Warning` ve üzeri seviyedeki log kayıtlarını çalışma dizinindeki
+  `Loglar/hata-yyyyMMdd.log` dosyasına da yazar (bu klasör `.gitignore`'da, depoya
+  girmez).
+- `Program.cs`'de `builder.Logging.AddProvider(...)` ile kayıt edilir; ASP.NET Core'un
+  `UseExceptionHandler` middleware'i beklenmeyen her hatayı zaten `Error` seviyesinde
+  logladığı için, ek bir kod yazmaya gerek kalmadan bu hatalar artık kalıcı dosyaya da
+  düşer. Hata sayfasında gösterilen `RequestId` ile log satırındaki zaman damgası
+  eşleştirilerek ilgili hata bulunabilir.
+- Dosya yazımı `try/catch` ile korunur: loglama başarısız olsa bile uygulama akışı
+  bozulmaz.
+
+---
+
 ## Şartname dokümanından bilinçli sapmalar
 
 | Konu | Dokümanda | Bu projede | Gerekçe |
@@ -129,3 +154,17 @@ uygulanmadığını kontrol edip yalnızca eksikleri işler.
 | Vergi no | Tabloda kısıt yok | Filtreli benzersiz indeks | İş kuralları bölümü "vergi no benzersiz olmalıdır" diyor. SQL Server unique index'te NULL'ları eşit saydığı için boş olanlar filtre dışı bırakıldı. |
 | Pasife alma | "Pasife alınmalıdır" | Bakiye/stok engel değil, uyarı | Doküman pasife almayı çıkış yolu olarak tanımlıyor; engellemek o yolu kapatırdı. |
 | Son yönetici | "Son yönetici silinememelidir" | Rol değiştirme ve rol yetkisi de korunur | Rolü değiştirmek de o hesabı yönetici olmaktan çıkarır; kural rol adına değil `Kullanici.Guncelle` yetkisine bağlandı. |
+| Stok kategorisi | Tabloda "Liste" (sabit seçenekler) | Serbest metin + öneri listesi (`datalist`) | Doküman kategori için örnek bir liste vermiyor (sadece "ürün kategorisi/grubu" diyor); hangi kategorilerin var olacağı işletmeye göre değişir. Sabit bir enum yazmak yerine, mevcut kayıtlardan öneri listesi üretildi; serbest yazmak da mümkün. |
+| Stok birimi | Tabloda "Liste" (sabit seçenekler) | Seçim kutusu (8 yaygın birim: Adet/Kg/Litre/Metre/M2/Paket/Kutu/Koli) + "Diğer" ile serbest giriş | Doküman örnek değerler veriyor ("Adet / Kg / Litre / Kutu vb."); form artık gerçek bir `<select>` sunuyor, ama "vb." ifadesi listeyi kapalı görmediği için "Diğer" seçeneğiyle listede olmayan bir birim de girilebiliyor. Veritabanında hâlâ serbest metin (`nvarchar`) — enum olsaydı yeni bir birim eklemek yeniden derleme gerektirirdi. |
+
+---
+
+## Bilinen sınırlar
+
+Bu maddeler proje kapsamında bilerek çözülmedi. Gerçek bir kurulumda ele alınmaları gerekir.
+
+| Konu | Durum | Neden şimdilik böyle |
+|---|---|---|
+| Yetki iptali | İzinler girişte bir kez çözülüp çerezde taşınır. Kullanıcının rolü veya yetkisi değişirse, mevcut oturum 8 saatlik çerez süresi dolana ya da kullanıcı çıkış yapana kadar eski yetkilerle çalışır. | Her istekte veritabanından yetki doğrulamak (`ValidatePrincipal`) çözer ama her sayfa açılışına bir sorgu ekler. Ekranlarda bu davranış yazıyor: yetki kaydedildiğinde "değişiklik yeniden giriş yapıldığında etkili olur" uyarısı çıkar. |
+| Eşzamanlılık | Stok yeterliliği ve "son yönetici" kontrolü okuma ile `SaveChanges` arasında başka bir isteğin araya girmesine karşı korunmuyor. İki eşzamanlı çıkış kaydı stoğu negatife düşürebilir. | Doğru çözüm satır sürümü (`rowversion`) veya `SERIALIZABLE` işlem düzeyi. Tek kullanıcılı ön muhasebe senaryosunda pratik bir etkisi yok, kapsam dışı bırakıldı. |
+| Otomatik test | Birim/entegrasyon testi yok; doğrulama elle yapıldı. | Zaman kısıtı. Test yazılacak olsa ilk sıra hesaplanan bakiye ve miktar formüllerinde olurdu: girdisi belli, çıktısı tek sayı. |
