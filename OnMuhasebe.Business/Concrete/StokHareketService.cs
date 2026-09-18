@@ -141,8 +141,7 @@ public class StokHareketService : IStokHareketService
             HareketTipi = hareket.HareketTipi,
             Tarih       = hareket.Tarih,
             Miktar      = miktar,
-            Aciklama    = hareket.Aciklama,
-            Aktif       = hareket.Aktif
+            Aciklama    = hareket.Aciklama
         };
     }
 
@@ -164,8 +163,10 @@ public class StokHareketService : IStokHareketService
         // "GIR000007" -> "000007" -> 7. Elle girilmis farkli bicimler elenir.
         var enBuyuk = numaralar
             .Select(n => n[onEk.Length..])
-            .Where(son => son.Length > 0 && son.All(char.IsDigit))
-            .Select(int.Parse)
+            // TryParse: sayi olmayan ya da int'e sigmayacak kadar uzun bir
+            // son ek 0 sayilir. Parse olsaydi elle girilmis tek bir bozuk
+            // numara, oneri ucunu herkes icin kalici olarak patlatirdi.
+            .Select(son => int.TryParse(son, out var no) ? no : 0)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -199,6 +200,9 @@ public class StokHareketService : IStokHareketService
         var mevcut = await _stokService.MiktarGetirAsync(
             model.StokId, model.Id == 0 ? null : model.Id);
 
+        var kayitAktif = model.Id == 0
+            || await _context.StokHareketleri.AnyAsync(h => h.Id == model.Id && h.Aktif);
+
         decimal kaydedilecek;
 
         if (model.HareketTipi == StokHareketTipi.Sayim)
@@ -217,7 +221,8 @@ public class StokHareketService : IStokHareketService
                 return (false, "Giriş ve çıkış miktarı sıfırdan büyük olmalıdır.");
 
             // Negatif stok engellenir: cikis, eldeki maldan fazla olamaz.
-            if (model.HareketTipi == StokHareketTipi.Cikis && model.Miktar > mevcut)
+            // Pasif hareket miktara girmedigi icin duzeltilirken kontrol aranmaz.
+            if (model.HareketTipi == StokHareketTipi.Cikis && kayitAktif && model.Miktar > mevcut)
                 return (false, $"Yetersiz stok. Mevcut: {mevcut:N3} {stok.Birim}, çıkışı istenen: {model.Miktar:N3} {stok.Birim}");
 
             kaydedilecek = model.Miktar;
@@ -247,7 +252,6 @@ public class StokHareketService : IStokHareketService
             kayit.Tarih       = model.Tarih;
             kayit.Miktar      = kaydedilecek;
             kayit.Aciklama    = model.Aciklama?.Trim();
-            kayit.Aktif       = model.Aktif;
         }
 
         // Miktar kolonu yok; hareket kaydedildigi anda hesaplamaya dahil olur.

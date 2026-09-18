@@ -59,7 +59,7 @@ public class StokHareketController : Controller
     [Yetki(Modul.StokHareket, Islem.Ekle)]
     public async Task<IActionResult> Ekle(StokHareketFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -82,7 +82,7 @@ public class StokHareketController : Controller
     [Yetki(Modul.StokHareket, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(StokHareketFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpPost]
@@ -135,8 +135,14 @@ public class StokHareketController : Controller
         return Json(new { miktar });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(StokHareketFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(StokHareketFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             // Dogrulama hatasinda form yeniden cizilir; acilir liste bos kalmasin.

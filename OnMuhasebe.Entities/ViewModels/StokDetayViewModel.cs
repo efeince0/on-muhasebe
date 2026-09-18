@@ -40,19 +40,42 @@ public class StokDetayViewModel
 
     public bool KritikSeviyede => KritikStok.HasValue && MevcutMiktar <= KritikStok.Value;
 
+    /// <summary>Elle girilen hareketler + fatura satirlari.</summary>
     public int HareketSayisi { get; set; }
+
+    /// <summary>
+    /// Urun hareket dokumu: stok hareketleri ve fatura satirlari tek zaman
+    /// cizgisinde, her satirdan sonraki miktarla birlikte. Cari ekstresinin
+    /// stok karsiligi.
+    /// </summary>
     public List<StokHareketSatirViewModel> SonHareketler { get; set; } = [];
 
     public DateTime  OlusturmaTarihi  { get; set; }
     public DateTime? GuncellemeTarihi { get; set; }
 }
 
+/// <summary>
+/// Hareket dokumundeki bir satir. Kaynak elle girilen bir stok hareketi de
+/// olabilir, bir fatura satiri da; ikisi de miktari ayni sekilde etkiler.
+/// </summary>
 public class StokHareketSatirViewModel
 {
-    public int             Id          { get; set; }
-    public string          HareketNo   { get; set; } = null!;
-    public DateTime        Tarih       { get; set; }
-    public StokHareketTipi HareketTipi { get; set; }
-    public decimal         Miktar      { get; set; }
-    public string?         Aciklama    { get; set; }
+    public DateTime Tarih    { get; set; }
+
+    /// <summary>Hareket numarasi veya fatura numarasi.</summary>
+    public string   Belge    { get; set; } = null!;
+
+    /// <summary>Giriş / Çıkış / Sayım / Alış Faturası / Satış Faturası.</summary>
+    public string   Tur      { get; set; } = null!;
+
+    public string?  Aciklama { get; set; }
+
+    /// <summary>Miktara etkisi; isaretli. Sayim farki eksi de olabilir.</summary>
+    public decimal  Degisim  { get; set; }
+
+    /// <summary>Satir islendikten sonraki miktar; serviste doldurulur.</summary>
+    public decimal  YuruyenMiktar { get; set; }
+
+    public decimal Giris => Degisim > 0 ?  Degisim : 0;
+    public decimal Cikis => Degisim < 0 ? -Degisim : 0;
 }

@@ -126,7 +126,6 @@ public class FaturaService : IFaturaService
                 CariId     = f.CariId,
                 Tarih      = f.Tarih,
                 Aciklama   = f.Aciklama,
-                Aktif      = f.Aktif,
 
                 Satirlar = f.Satirlar
                     .Where(sa => sa.Aktif)
@@ -217,8 +216,10 @@ public class FaturaService : IFaturaService
         // "SAT000007" -> "000007" -> 7. Elle girilmis farkli bicimler elenir.
         var enBuyuk = numaralar
             .Select(n => n[onEk.Length..])
-            .Where(son => son.Length > 0 && son.All(char.IsDigit))
-            .Select(int.Parse)
+            // TryParse: sayi olmayan ya da int'e sigmayacak kadar uzun bir
+            // son ek 0 sayilir. Parse olsaydi elle girilmis tek bir bozuk
+            // numara, oneri ucunu herkes icin kalici olarak patlatirdi.
+            .Select(son => int.TryParse(son, out var no) ? no : 0)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -276,7 +277,13 @@ public class FaturaService : IFaturaService
         if (stoklar.Count != stokIdler.Count)
             return (false, "Satırlardan birinde geçersiz ürün seçilmiş.");
 
-        if (model.FaturaTipi == FaturaTipi.Satis)
+        // Pasif (iptal edilmis) fatura stok miktarina girmiyor; satirlari
+        // duzeltilirken yeterlilik aranmaz. Yeniden aktif edilirken zaten
+        // AktifYapAsync negatif miktar uyarisini veriyor.
+        var faturaAktif = model.Id == 0
+            || await _context.Faturalar.AnyAsync(f => f.Id == model.Id && f.Aktif);
+
+        if (model.FaturaTipi == FaturaTipi.Satis && faturaAktif)
         {
             var hata = await YetersizStokMesajiAsync(satirlar, stoklar, model.Id);
             if (hata != null)
@@ -319,9 +326,6 @@ public class FaturaService : IFaturaService
         fatura.AraToplam   = araToplam;
         fatura.ToplamKdv   = toplamKdv;
         fatura.GenelToplam = araToplam + toplamKdv;
-
-        if (model.Id != 0)
-            fatura.Aktif = model.Aktif;
 
         foreach (var satir in satirlar)
         {

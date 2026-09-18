@@ -1,7 +1,12 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace OnMuhasebe.Core.Enums;
 
 public enum IslemTipi
 {
+    [Display(Name = "Tahsilat")]
     Tahsilat = 1,
-    Odeme    = 2
+
+    [Display(Name = "Ödeme")]
+    Odeme = 2
 }

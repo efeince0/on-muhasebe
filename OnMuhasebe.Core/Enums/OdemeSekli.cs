@@ -1,9 +1,18 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace OnMuhasebe.Core.Enums;
 
 public enum OdemeSekli
 {
-    Nakit      = 1,
-    Havale     = 2,
+    [Display(Name = "Nakit")]
+    Nakit = 1,
+
+    [Display(Name = "Havale/EFT")]
+    Havale = 2,
+
+    [Display(Name = "Kredi Kartı")]
     KrediKarti = 3,
-    CekSenet   = 4
+
+    [Display(Name = "Çek/Senet")]
+    CekSenet = 4
 }

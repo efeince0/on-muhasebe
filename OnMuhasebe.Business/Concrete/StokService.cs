@@ -55,7 +55,6 @@ public class StokService : IStokService
             KritikStok = s.KritikStok,
             Aktif = s.Aktif,
 
-
             // Miktar kolonu yok: stok hareketleri ve fatura satirlarindan hesaplanir.
             // Giris ve alis faturasi artirir, cikis ve satis faturasi azaltir.
             // Sayim farki isaretli kaydedilir.
@@ -134,15 +133,14 @@ public class StokService : IStokService
                 AlisFiyati       = s.AlisFiyati,
                 SatisFiyati      = s.SatisFiyati,
                 KdvOrani         = s.KdvOrani,
-                KritikStok       = s.KritikStok,
-                Aktif = s.Aktif
+                KritikStok       = s.KritikStok
             })
             .FirstOrDefaultAsync();
     }
 
     public async Task<StokDetayViewModel?> DetayGetirAsync(int id, int sonHareketSayisi = 10)
     {
-        return await _context.Stoklar
+        var model = await _context.Stoklar
             .AsNoTracking()
             .Where(s => s.Id == id)
             .Select(s => new StokDetayViewModel
@@ -175,27 +173,92 @@ public class StokService : IStokService
                     .Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.Fatura.FaturaTipi == FaturaTipi.Satis)
                     .Sum(fs => fs.Miktar),
 
-                HareketSayisi = s.Hareketler.Count(h => h.Aktif),
-
-                SonHareketler = s.Hareketler
-                    .Where(h => h.Aktif)
-                    .OrderByDescending(h => h.Tarih).ThenByDescending(h => h.Id)
-                    .Take(sonHareketSayisi)
-                    .Select(h => new StokHareketSatirViewModel
-                    {
-                        Id          = h.Id,
-                        HareketNo   = h.HareketNo,
-                        Tarih       = h.Tarih,
-                        HareketTipi = h.HareketTipi,
-                        Miktar      = h.Miktar,
-                        Aciklama    = h.Aciklama
-                    })
-                    .ToList(),
-
                 OlusturmaTarihi  = s.OlusturmaTarihi,
                 GuncellemeTarihi = s.GuncellemeTarihi
             })
             .FirstOrDefaultAsync();
+
+        if (model == null)
+            return null;
+
+        model.SonHareketler = await HareketDokumuAsync(id, sonHareketSayisi);
+        model.HareketSayisi = await HareketSayisiAsync(id);
+
+        return model;
+    }
+
+    private async Task<int> HareketSayisiAsync(int stokId)
+    {
+        var elle = await _context.StokHareketleri
+            .CountAsync(h => h.StokId == stokId && h.Aktif);
+
+        var faturali = await _context.FaturaSatirlari
+            .CountAsync(fs => fs.StokId == stokId && fs.Aktif && fs.Fatura.Aktif);
+
+        return elle + faturali;
+    }
+
+    /// <summary>
+    /// Urunun hareket dokumu: elle girilen hareketler ve fatura satirlari
+    /// tek zaman cizgisinde. Miktar formulu iki kaynaktan topladigi icin
+    /// gecmis de iki kaynaktan okunmali; yoksa ekrandaki miktar ile listedeki
+    /// hareketler birbirini tutmaz.
+    /// </summary>
+    private async Task<List<StokHareketSatirViewModel>> HareketDokumuAsync(int stokId, int sonHareketSayisi)
+    {
+        var hareketler = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(h => h.StokId == stokId && h.Aktif)
+            .Select(h => new StokHareketSatirViewModel
+            {
+                Tarih    = h.Tarih,
+                Belge    = h.HareketNo,
+                Tur      = h.HareketTipi == StokHareketTipi.Giris ? "Giriş"
+                         : h.HareketTipi == StokHareketTipi.Cikis ? "Çıkış"
+                         : "Sayım",
+                Aciklama = h.Aciklama,
+
+                // Giris artirir, cikis azaltir; sayim farki zaten isaretli saklaniyor.
+                Degisim  = h.HareketTipi == StokHareketTipi.Giris ?  h.Miktar
+                         : h.HareketTipi == StokHareketTipi.Cikis ? -h.Miktar
+                         : h.Miktar
+            })
+            .ToListAsync();
+
+        var faturaSatirlari = await _context.FaturaSatirlari
+            .AsNoTracking()
+            .Where(fs => fs.StokId == stokId && fs.Aktif && fs.Fatura.Aktif)
+            .Select(fs => new StokHareketSatirViewModel
+            {
+                Tarih    = fs.Fatura.Tarih,
+                Belge    = fs.Fatura.FaturaNo,
+                Tur      = fs.Fatura.FaturaTipi == FaturaTipi.Alis ? "Alış Faturası" : "Satış Faturası",
+                Aciklama = fs.Fatura.Cari.Unvan,
+                Degisim  = fs.Fatura.FaturaTipi == FaturaTipi.Alis ? fs.Miktar : -fs.Miktar
+            })
+            .ToListAsync();
+
+        // Iki liste bellekte birlestiriliyor; kolonlari farkli oldugu icin
+        // veritabaninda birlestirmek sorguyu okunmaz hale getirirdi.
+        var tumu = hareketler
+            .Concat(faturaSatirlari)
+            .OrderBy(x => x.Tarih)
+            .ThenBy(x => x.Belge)
+            .ToList();
+
+        // Yuruyen miktar bastan hesaplanir, sonra son N satir gosterilir.
+        decimal yuruyen = 0;
+        foreach (var satir in tumu)
+        {
+            yuruyen += satir.Degisim;
+            satir.YuruyenMiktar = yuruyen;
+        }
+
+        return tumu
+            .OrderByDescending(x => x.Tarih)
+            .ThenByDescending(x => x.Belge)
+            .Take(sonHareketSayisi)
+            .ToList();
     }
 
     public async Task<List<string>> KategorileriGetirAsync()
@@ -219,8 +282,10 @@ public class StokService : IStokService
 
         var enBuyuk = kodlar
             .Select(k => k[onEk.Length..])
-            .Where(son => son.Length > 0 && son.All(char.IsDigit))
-            .Select(int.Parse)
+            // TryParse: sayi olmayan ya da int'e sigmayacak kadar uzun bir
+            // son ek 0 sayilir. Parse olsaydi elle girilmis tek bir bozuk
+            // numara, oneri ucunu herkes icin kalici olarak patlatirdi.
+            .Select(son => int.TryParse(son, out var no) ? no : 0)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -268,7 +333,6 @@ public class StokService : IStokService
             mevcut.SatisFiyati = model.SatisFiyati;
             mevcut.KdvOrani = model.KdvOrani;
             mevcut.KritikStok = model.KritikStok;
-            mevcut.Aktif = model.Aktif;
         }
 
         await _context.SaveChangesAsync();
@@ -346,7 +410,9 @@ public class StokService : IStokService
                 + s.Hareketler.Where(h => h.Aktif && h.Id != haricHareketId && h.HareketTipi == StokHareketTipi.Sayim).Sum(h => h.Miktar)
                 + s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.FaturaId != haricFaturaId && fs.Fatura.FaturaTipi == FaturaTipi.Alis).Sum(fs => fs.Miktar)
                 - s.FaturaSatirlari.Where(fs => fs.Aktif && fs.Fatura.Aktif && fs.FaturaId != haricFaturaId && fs.Fatura.FaturaTipi == FaturaTipi.Satis).Sum(fs => fs.Miktar))
-            .FirstAsync();
+            // Olmayan bir stokId icin FirstAsync istisna atip 500 dondururdu;
+            // miktar sorusunun dogru cevabi bu durumda sifir.
+            .FirstOrDefaultAsync();
     }
 
     private Task<decimal> MiktarHesaplaAsync(int stokId) => MiktarGetirAsync(stokId);

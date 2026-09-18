@@ -31,9 +31,6 @@ public class FaturaFormViewModel
     [Display(Name = "Açıklama")]
     public string? Aciklama { get; set; }
 
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
-
     /// <summary>
     /// Satirlar formdan Satirlar[0].StokId gibi adlarla gelir.
     /// Bos satirlar serviste elenir; en az bir gecerli satir zorunludur.

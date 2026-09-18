@@ -61,7 +61,7 @@ public class CariController : Controller
     [Yetki(Modul.Cari, Islem.Ekle)]
     public async Task<IActionResult> Ekle(CariFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -83,7 +83,7 @@ public class CariController : Controller
     [Yetki(Modul.Cari, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(CariFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpPost]
@@ -113,8 +113,14 @@ public class CariController : Controller
         return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(CariFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(CariFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
             return View("Form", model);
 

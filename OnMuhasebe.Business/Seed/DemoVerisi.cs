@@ -144,7 +144,14 @@ public static class DemoVerisi
         (string Kod, decimal Miktar)[] girisler =
         [
             ("S0001", 150m), ("S0002", 60m),  ("S0003", 80m),  ("S0004", 200m),
-            ("S0005", 1_500m), ("S0006", 120m), ("S0007", 250m)
+            ("S0005", 1_500m), ("S0006", 120m), ("S0007", 250m),
+            // S0008 bir hizmet (Nakliye Hizmeti); fiziksel "depoya giris" olmaz,
+            // ama asagidaki demo satis faturasi 1 sefer sattigi icin en az o kadar
+            // "kapasite girisi" olmazsa mevcut miktar negatife duser ve stok
+            // detayinda yanlislikla bir hataymis gibi gorunur. Kucuk bir giris
+            // ekleyerek demo veriyi gerceginde miktarin sifirin altina dusmedigi
+            // bir gorunume getiriyoruz.
+            ("S0008", 5m)
         ];
 
         var hareketler = new List<StokHareket>();

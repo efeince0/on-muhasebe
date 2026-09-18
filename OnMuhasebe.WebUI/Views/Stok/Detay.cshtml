@@ -161,7 +161,7 @@
     @* --- SON HAREKETLER --- *@
     <div class="col-lg-7">
         <div class="d-flex justify-content-between align-items-baseline mb-3">
-            <h5 class="mb-0">Son Hareketler</h5>
+            <h5 class="mb-0">Hareket Dökümü</h5>
             <span class="text-muted small">Toplam @Model.HareketSayisi hareket</span>
         </div>
 
@@ -194,21 +194,26 @@
                     <thead class="table-light">
                         <tr>
                             <th>Tarih</th>
-                            <th>Hareket No</th>
-                            <th>Tip</th>
-                            <th class="text-end">Miktar</th>
-                            <th>Açıklama</th>
+                            <th>Belge</th>
+                            <th>Tür</th>
+                            <th class="text-end">Giriş</th>
+                            <th class="text-end">Çıkış</th>
+                            <th class="text-end">Kalan</th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var hareket in Model.SonHareketler)
                     {
                         <tr>
-                            <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
-                            <td><code>@hareket.HareketNo</code></td>
-                            <td>@hareket.HareketTipi</td>
-                            <td class="text-end">@hareket.Miktar.ToString("N3")</td>
-                            <td class="text-muted small">@hareket.Aciklama</td>
+                            <td class="text-nowrap">@hareket.Tarih.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <code>@hareket.Belge</code>
+                                <div class="text-muted small">@hareket.Aciklama</div>
+                            </td>
+                            <td class="text-nowrap">@hareket.Tur</td>
+                            <td class="text-end text-success">@(hareket.Giris == 0 ? "" : hareket.Giris.ToString("N3"))</td>
+                            <td class="text-end text-danger">@(hareket.Cikis == 0 ? "" : hareket.Cikis.ToString("N3"))</td>
+                            <td class="text-end fw-semibold">@hareket.YuruyenMiktar.ToString("N3")</td>
                         </tr>
                     }
                     </tbody>

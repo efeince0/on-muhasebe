@@ -35,7 +35,4 @@ public class KullaniciFormViewModel
     [RegularExpression(SifreKurali.Desen, ErrorMessage = SifreKurali.Mesaj)]
     [Display(Name = "Şifre")]
     public string? Sifre { get; set; }
-
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
 }

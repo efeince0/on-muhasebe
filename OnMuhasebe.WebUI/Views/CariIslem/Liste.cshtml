@@ -165,7 +165,7 @@ else
                             <span class="badge text-bg-secondary">Pasif</span>
                         }
                     </td>
-                    <td>@islem.OdemeSekli</td>
+                    <td>@islem.OdemeSekli.Etiket()</td>
                     <td class="text-end">@islem.Tutar.ToString("N2") ₺</td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Ekstre" asp-route-cariId="@islem.CariId"

@@ -118,8 +118,7 @@ public class CariIslemService : ICariIslemService
                 Tarih      = i.Tarih,
                 Tutar      = i.Tutar,
                 OdemeSekli = i.OdemeSekli,
-                Aciklama   = i.Aciklama,
-                Aktif      = i.Aktif
+                Aciklama   = i.Aciklama
             })
             .FirstOrDefaultAsync();
     }
@@ -137,8 +136,10 @@ public class CariIslemService : ICariIslemService
         // "TAH000007" -> "000007" -> 7. Elle girilmis farkli bicimler elenir.
         var enBuyuk = numaralar
             .Select(n => n[onEk.Length..])
-            .Where(son => son.Length > 0 && son.All(char.IsDigit))
-            .Select(int.Parse)
+            // TryParse: sayi olmayan ya da int'e sigmayacak kadar uzun bir
+            // son ek 0 sayilir. Parse olsaydi elle girilmis tek bir bozuk
+            // numara, oneri ucunu herkes icin kalici olarak patlatirdi.
+            .Select(son => int.TryParse(son, out var no) ? no : 0)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -197,7 +198,6 @@ public class CariIslemService : ICariIslemService
             mevcut.Tutar      = model.Tutar;
             mevcut.OdemeSekli = model.OdemeSekli;
             mevcut.Aciklama   = model.Aciklama?.Trim();
-            mevcut.Aktif      = model.Aktif;
         }
 
         // Bakiye kolonu yok; hareket kaydedildigi anda hesaplamaya dahil olur.

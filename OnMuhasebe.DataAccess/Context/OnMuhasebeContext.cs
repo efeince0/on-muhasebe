@@ -67,8 +67,15 @@ public class OnMuhasebeContext : DbContext
                 girdi.Property(x => x.OlusturmaTarihi).IsModified      = false;
                 girdi.Property(x => x.OlusturanKullaniciId).IsModified = false;
 
-                girdi.Entity.GuncellemeTarihi       = simdi;
-                girdi.Entity.GuncelleyenKullaniciId = AktifKullaniciId;
+                girdi.Entity.GuncellemeTarihi = simdi;
+
+                // Giris sirasindaki SonGiris yazimi gibi oturum disi kayitlarda
+                // AktifKullaniciId bos gelir; o durumda eski deger korunur,
+                // null yazilip gecmis bilgi silinmez.
+                if (AktifKullaniciId.HasValue)
+                    girdi.Entity.GuncelleyenKullaniciId = AktifKullaniciId;
+                else
+                    girdi.Property(x => x.GuncelleyenKullaniciId).IsModified = false;
             }
         }
     }

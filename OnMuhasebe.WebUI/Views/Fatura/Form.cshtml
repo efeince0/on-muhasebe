@@ -39,18 +39,6 @@
             <span asp-validation-for="Tarih" class="text-danger small"></span>
         </div>
 
-        <div class="col-md-3">
-            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
-            @if (!yeniKayit)
-            {
-                <label class="form-label d-block">&nbsp;</label>
-                <div class="form-check mt-2">
-                    <input asp-for="Aktif" class="form-check-input" />
-                    <label asp-for="Aktif" class="form-check-label"></label>
-                </div>
-            }
-        </div>
-
         <div class="col-md-6">
             <label asp-for="CariId" class="form-label"></label>
             <select asp-for="CariId" class="form-select">

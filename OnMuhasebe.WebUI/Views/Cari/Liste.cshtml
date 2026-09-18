@@ -107,7 +107,7 @@ else
                     <td>
                         <a asp-action="Detay" asp-route-id="@cari.Id" class="text-decoration-none">@cari.Unvan</a>
                     </td>
-                    <td>@cari.CariTipi</td>
+                    <td>@cari.CariTipi.Etiket()</td>
                     <td>@cari.Telefon</td>
                     <td class="text-end">@cari.GuncelBakiye.ToString("N2") ₺</td>
                     <td>

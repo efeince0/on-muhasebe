@@ -30,9 +30,6 @@ public class RolFormViewModel
     [StringLength(200, ErrorMessage = "Açıklama en fazla 200 karakter olabilir.")]
     [Display(Name = "Açıklama")]
     public string? Aciklama { get; set; }
-
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
 }
 
 /// <summary>

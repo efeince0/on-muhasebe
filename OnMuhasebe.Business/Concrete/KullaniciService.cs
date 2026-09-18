@@ -126,8 +126,7 @@ public class KullaniciService : IKullaniciService
                 KullaniciAdi = k.KullaniciAdi,
                 AdSoyad      = k.AdSoyad,
                 Eposta       = k.Eposta,
-                RolId        = k.RolId,
-                Aktif        = k.Aktif
+                RolId        = k.RolId
             })
             .FirstOrDefaultAsync();
     }
@@ -205,7 +204,7 @@ public class KullaniciService : IKullaniciService
 
         // Dokuman [352]: sistem kullanici yonetebilen tek hesabini kaybetmemeli.
         // Pasife almak kadar rolu yetkisiz bir role cevirmek de ayni sonucu dogurur.
-        var hata = await SonYoneticiKorumasi(mevcut.Id, model.RolId, model.Aktif);
+        var hata = await SonYoneticiKorumasi(mevcut.Id, model.RolId, mevcut.Aktif);
         if (hata != null)
             return (false, hata);
 
@@ -213,7 +212,6 @@ public class KullaniciService : IKullaniciService
         mevcut.AdSoyad      = model.AdSoyad.Trim();
         mevcut.Eposta       = model.Eposta?.Trim();
         mevcut.RolId        = model.RolId;
-        mevcut.Aktif        = model.Aktif;
 
         await _context.SaveChangesAsync();
         return (true, null);

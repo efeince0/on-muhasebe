@@ -29,15 +29,7 @@
             <span asp-validation-for="Aciklama" class="text-danger small"></span>
         </div>
 
-        @* Yeni rol zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
-        @if (!yeniKayit)
-        {
-            <div class="form-check mb-3">
-                <input asp-for="Aktif" class="form-check-input" />
-                <label asp-for="Aktif" class="form-check-label"></label>
-            </div>
-        }
-        else
+        @if (yeniKayit)
         {
             <div class="alert alert-light border small">
                 Yeni rol izinsiz oluşur. Kaydettikten sonra listedeki

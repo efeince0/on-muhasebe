@@ -64,7 +64,7 @@ public class CariIslemController : Controller
     [Yetki(Modul.CariIslem, Islem.Ekle)]
     public async Task<IActionResult> Ekle(CariIslemFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -87,7 +87,7 @@ public class CariIslemController : Controller
     [Yetki(Modul.CariIslem, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(CariIslemFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpPost]
@@ -116,7 +116,11 @@ public class CariIslemController : Controller
         return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
     }
 
+    // Ekstre yalnizca islemleri degil cari kartinin bilgilerini ve faturalarini
+    // da gosteriyor; iki izin birden araniyor. Filtreler sirayla calisir,
+    // ikisi de gecmeden action'a girilmez.
     [Yetki(Modul.CariIslem, Islem.Goruntule)]
+    [Yetki(Modul.Cari, Islem.Goruntule)]
     public async Task<IActionResult> Ekstre(int cariId, DateTime? baslangic, DateTime? bitis)
     {
         var model = await _cariIslemService.EkstreGetirAsync(cariId, baslangic, bitis);
@@ -129,8 +133,14 @@ public class CariIslemController : Controller
         return View(model);
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(CariIslemFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(CariIslemFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             // Dogrulama hatasinda form yeniden cizilir; acilir liste bos kalmasin.

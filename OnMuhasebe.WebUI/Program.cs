@@ -1,9 +1,10 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using OnMuhasebe.Business.DependencyInjection;
 using OnMuhasebe.Business.Seed;
+using OnMuhasebe.WebUI.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,11 @@ builder.Services.AddControllersWithViews(secenekler =>
 
 builder.Services.AddBusinessServices(
     builder.Configuration.GetConnectionString("OnMuhasebeDb")!);
+
+// Serilog vb. bir pakete gerek kalmadan "teknik hatalar loglanmali" gereksinimini
+// karsilamak icin: konsolun yaninda kalici bir dosyaya da Warning/Error loglar.
+builder.Logging.AddProvider(new DosyaLoggerProvider(
+    Path.Combine(builder.Environment.ContentRootPath, "Loglar")));
 
 var app = builder.Build();
 await app.Services.VeritabaniniHazirlaAsync();

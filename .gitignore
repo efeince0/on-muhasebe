@@ -31,6 +31,9 @@ x86/
 [Aa][Rr][Mm]64/
 bld/
 [Bb]in/
+
+# Calisma zamaninda uretilen hata log dosyalari (DosyaLoggerProvider)
+Loglar/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/

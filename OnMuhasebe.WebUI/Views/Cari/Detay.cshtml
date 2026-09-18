@@ -7,7 +7,7 @@
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
         <h3 class="mb-1">@Model.Unvan</h3>
-        <span class="text-muted"><code>@Model.CariKodu</code> · @Model.CariTipi</span>
+        <span class="text-muted"><code>@Model.CariKodu</code> · @Model.CariTipi.Etiket()</span>
         @if (!Model.Aktif)
         {
             <span class="badge text-bg-secondary ms-2">Pasif</span>
@@ -125,8 +125,8 @@
                         <tr>
                             <td>@hareket.Tarih.ToString("dd.MM.yyyy")</td>
                             <td><code>@hareket.IslemNo</code></td>
-                            <td>@hareket.IslemTipi</td>
-                            <td>@hareket.OdemeSekli</td>
+                            <td>@hareket.IslemTipi.Etiket()</td>
+                            <td>@hareket.OdemeSekli.Etiket()</td>
                             <td class="text-end">@hareket.Tutar.ToString("N2") ₺</td>
                         </tr>
                     }

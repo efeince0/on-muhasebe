@@ -85,7 +85,7 @@ public class FaturaController : Controller
     [Yetki(Modul.Fatura, Islem.Ekle)]
     public async Task<IActionResult> Ekle(FaturaFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -108,7 +108,7 @@ public class FaturaController : Controller
     [Yetki(Modul.Fatura, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(FaturaFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpPost]
@@ -149,8 +149,14 @@ public class FaturaController : Controller
         return Json(new { faturaNo = numara });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(FaturaFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(FaturaFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             // Dogrulama hatasinda form yeniden cizilir; acilir listeler bos kalmasin.

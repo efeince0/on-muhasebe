@@ -48,17 +48,35 @@
 
             <div class="col-md-4">
                 <label asp-for="Birim" class="form-label"></label>
-                <input asp-for="Birim" class="form-control" list="birimListesi" autocomplete="off" />
-                <datalist id="birimListesi">
-                    <option value="Adet"></option>
-                    <option value="Kg"></option>
-                    <option value="Lt"></option>
-                    <option value="Mt"></option>
-                    <option value="M2"></option>
-                    <option value="Paket"></option>
-                    <option value="Kutu"></option>
-                    <option value="Koli"></option>
-                </datalist>
+                @* Sartname Birim'i sabit secenekli "Liste" olarak tanimliyor (Adet/Kg/Litre/Kutu vb.).
+                   Secim kutusu o listeyi verir; "Diger" ile listede olmayan bir birim de girilebilir. *@
+                @{
+                    var birimSecenekleri = new[] { "Adet", "Kg", "Litre", "Metre", "M2", "Paket", "Kutu", "Koli" };
+                    var birimListedeMi = birimSecenekleri.Contains(Model.Birim);
+                }
+                <select id="birimSecim" class="form-select" autocomplete="off">
+                    @foreach (var b in birimSecenekleri)
+                    {
+                        if (b == Model.Birim)
+                        {
+                            <option value="@b" selected>@b</option>
+                        }
+                        else
+                        {
+                            <option value="@b">@b</option>
+                        }
+                    }
+                    @if (birimListedeMi)
+                    {
+                        <option value="__diger__">Diğer…</option>
+                    }
+                    else
+                    {
+                        <option value="__diger__" selected>Diğer…</option>
+                    }
+                </select>
+                <input asp-for="Birim" class="form-control mt-2 @(birimListedeMi ? "d-none" : "")"
+                       id="birimDiger" autocomplete="off" placeholder="Birim adını yazın" />
                 <span asp-validation-for="Birim" class="text-danger small"></span>
             </div>
 
@@ -87,17 +105,6 @@
                 <div class="form-text">Boş bırakılırsa kritik seviye uyarısı yapılmaz.</div>
             </div>
 
-            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
-            @if (!yeniKayit)
-            {
-                <div class="col-md-4 d-flex align-items-center">
-                    <div class="form-check mt-4">
-                        <input asp-for="Aktif" class="form-check-input" />
-                        <label asp-for="Aktif" class="form-check-label"></label>
-                    </div>
-                </div>
-            }
-
         </div>
 
         <div class="mt-4">
@@ -111,4 +118,19 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Birim secim kutusu ile asil gonderilen (asp-for="Birim") alani senkron tutar:
+        // listeden secilince deger oradan gelir, "Diger" secilince serbest metin kutusu acilir.
+        document.getElementById('birimSecim').addEventListener('change', function () {
+            var girdi = document.getElementById('birimDiger');
+            if (this.value === '__diger__') {
+                girdi.classList.remove('d-none');
+                girdi.value = '';
+                girdi.focus();
+            } else {
+                girdi.classList.add('d-none');
+                girdi.value = this.value;
+            }
+        });
+    </script>
 }

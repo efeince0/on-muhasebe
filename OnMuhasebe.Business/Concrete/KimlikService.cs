@@ -20,7 +20,11 @@ public class KimlikService : IKimlikService
         var kullanici = await _context.Kullanicilar
             .Include(k => k.Rol)
                 .ThenInclude(r => r.Izinler)
-            .FirstOrDefaultAsync(k => k.KullaniciAdi == kullaniciAdi && k.Aktif);
+            // Rolu pasife alinmis kullanici da giris yapamaz: RolService pasife
+            // alirken "bu roldeki kullanicilar giris yapamayacak" diye uyariyor,
+            // kural burada uygulaniyor.
+            .FirstOrDefaultAsync(k =>
+                k.KullaniciAdi == kullaniciAdi && k.Aktif && k.Rol.Aktif);
 
         if (kullanici == null)
             return null;

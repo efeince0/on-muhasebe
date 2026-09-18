@@ -34,7 +34,7 @@ public class RolController : Controller
     [Yetki(Modul.Rol, Islem.Ekle)]
     public async Task<IActionResult> Ekle(RolFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -56,7 +56,7 @@ public class RolController : Controller
     [Yetki(Modul.Rol, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(RolFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpGet]
@@ -117,8 +117,14 @@ public class RolController : Controller
         return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(RolFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(RolFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
             return View("Form", model);
 

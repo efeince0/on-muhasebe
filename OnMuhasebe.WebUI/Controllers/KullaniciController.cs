@@ -44,7 +44,7 @@ public class KullaniciController : Controller
     [Yetki(Modul.Kullanici, Islem.Ekle)]
     public async Task<IActionResult> Ekle(KullaniciFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -67,7 +67,7 @@ public class KullaniciController : Controller
     [Yetki(Modul.Kullanici, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(KullaniciFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpGet]
@@ -130,8 +130,14 @@ public class KullaniciController : Controller
         return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(KullaniciFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(KullaniciFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             // Dogrulama hatasinda form yeniden cizilir; acilir liste bos kalmasin.

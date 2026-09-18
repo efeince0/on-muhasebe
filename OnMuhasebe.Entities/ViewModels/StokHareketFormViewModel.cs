@@ -41,7 +41,4 @@ public class StokHareketFormViewModel
     [StringLength(250, ErrorMessage = "Açıklama en fazla 250 karakter olabilir.")]
     [Display(Name = "Açıklama")]
     public string? Aciklama { get; set; }
-
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
 }

@@ -46,7 +46,6 @@ public class StokController : Controller
         return View(model);
     }
 
-
     [HttpGet]
     [Yetki(Modul.Stok, Islem.Ekle)]
     public async Task<IActionResult> Ekle()
@@ -64,7 +63,7 @@ public class StokController : Controller
     [Yetki(Modul.Stok, Islem.Ekle)]
     public async Task<IActionResult> Ekle(StokFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: true);
     }
 
     [HttpGet]
@@ -87,7 +86,7 @@ public class StokController : Controller
     [Yetki(Modul.Stok, Islem.Guncelle)]
     public async Task<IActionResult> Guncelle(StokFormViewModel model)
     {
-        return await KaydetVeYonlendir(model);
+        return await KaydetVeYonlendir(model, yeniKayit: false);
     }
 
     [HttpPost]
@@ -116,8 +115,14 @@ public class StokController : Controller
         return RedirectToAction(nameof(Liste), new { sadeceAktif = false });
     }
 
-    private async Task<IActionResult> KaydetVeYonlendir(StokFormViewModel model)
+    private async Task<IActionResult> KaydetVeYonlendir(StokFormViewModel model, bool yeniKayit)
     {
+        // Ekle ve Guncelle ayni servis metodunu cagirir; hangisinin calisacagini
+        // model.Id belirler. Formdan gelen Id ile action'in yetkisi uyusmazsa
+        // sadece "Ekle" yetkisi olan biri Id gonderip guncelleme yapabilirdi.
+        if (yeniKayit != (model.Id == 0))
+            return Forbid();
+
         if (!ModelState.IsValid)
         {
             await KategorileriYukle();

@@ -45,7 +45,4 @@ public class CariFormViewModel
 
     [Display(Name = "Açılış Bakiyesi")]
     public decimal AcilisBakiye { get; set; }
-
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
 }

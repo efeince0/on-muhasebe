@@ -41,7 +41,4 @@ public class StokFormViewModel
     [Range(0, 99999999, ErrorMessage = "Kritik stok negatif olamaz.")]
     [Display(Name = "Kritik Stok Seviyesi")]
     public decimal? KritikStok { get; set; }
-
-    [Display(Name = "Aktif")]
-    public bool Aktif { get; set; } = true;
 }

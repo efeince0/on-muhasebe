@@ -104,8 +104,7 @@ public class RolService : IRolService
             {
                 Id       = r.Id,
                 RolAdi   = r.RolAdi,
-                Aciklama = r.Aciklama,
-                Aktif    = r.Aktif
+                Aciklama = r.Aciklama
             })
             .FirstOrDefaultAsync();
     }
@@ -141,12 +140,11 @@ public class RolService : IRolService
             i.RolId == model.Id && i.Aktif && i.IzinVar &&
             i.Modul == Modul.Kullanici && i.Islem == Islem.Guncelle);
 
-        if (!await YonetimSurdurulebilirMi(model.Id, model.Aktif, yetkiVar))
+        if (!await YonetimSurdurulebilirMi(model.Id, mevcut.Aktif, yetkiVar))
             return (false, "Bu rol, kullanıcı yönetebilen tek kaynak. Pasife alınamaz. Önce başka bir yönetici rolü tanımlayın.");
 
         mevcut.RolAdi   = rolAdi;
         mevcut.Aciklama = model.Aciklama?.Trim();
-        mevcut.Aktif    = model.Aktif;
 
         await _context.SaveChangesAsync();
         return (true, null);
@@ -194,7 +192,17 @@ public class RolService : IRolService
         if (rol == null)
             return (false, "Kayıt bulunamadı.");
 
-        var kullaniciSatiri = model.Satirlar.FirstOrDefault(s => s.Modul == Modul.Kullanici);
+        // Formdan gelen satirlar tekrarli ya da tanimsiz bir modul tasiyabilir.
+        // Tekrar, RolIzinleri'ndeki (RolId, Modul, Islem) benzersiz indeksini
+        // ihlal edip 500 dondururdu. Bilinen modullere indirgenip her modul
+        // bir kez aliniyor.
+        var satirlar = model.Satirlar
+            .Where(s => Enum.IsDefined(s.Modul))
+            .GroupBy(s => s.Modul)
+            .Select(g => g.First())
+            .ToList();
+
+        var kullaniciSatiri = satirlar.FirstOrDefault(s => s.Modul == Modul.Kullanici);
         var yeniYetkiVar    = kullaniciSatiri?.Guncelle == true;
 
         if (!await YonetimSurdurulebilirMi(model.RolId, rol.Aktif, yeniYetkiVar))
@@ -206,7 +214,7 @@ public class RolService : IRolService
         var eskiler = await _context.RolIzinleri.Where(i => i.RolId == model.RolId).ToListAsync();
         _context.RolIzinleri.RemoveRange(eskiler);
 
-        foreach (var satir in model.Satirlar)
+        foreach (var satir in satirlar)
         {
             void Ekle(Islem islem, bool secili)
             {

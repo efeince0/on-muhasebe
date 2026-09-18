@@ -77,17 +77,6 @@
                 <span asp-validation-for="AcilisBakiye" class="text-danger small"></span>
             </div>
 
-            @* Yeni kayit zaten aktif olusur; kutucuk yalnizca guncellemede anlamli. *@
-            @if (!yeniKayit)
-            {
-                <div class="col-md-4 d-flex align-items-end">
-                    <div class="form-check mb-2">
-                        <input asp-for="Aktif" class="form-check-input" />
-                        <label asp-for="Aktif" class="form-check-label"></label>
-                    </div>
-                </div>
-            }
-
         </div>
 
         <div class="mt-4">

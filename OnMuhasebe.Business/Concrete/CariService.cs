@@ -115,8 +115,10 @@ public class CariService : ICariService
         // "C0007" -> "0007" -> 7. Sayi olmayanlar (ornegin "CARI-X") elenir.
         var enBuyuk = kodlar
             .Select(k => k[onEk.Length..])
-            .Where(son => son.Length > 0 && son.All(char.IsDigit))
-            .Select(int.Parse)
+            // TryParse: sayi olmayan ya da int'e sigmayacak kadar uzun bir
+            // son ek 0 sayilir. Parse olsaydi elle girilmis tek bir bozuk
+            // numara, oneri ucunu herkes icin kalici olarak patlatirdi.
+            .Select(son => int.TryParse(son, out var no) ? no : 0)
             .DefaultIfEmpty(0)
             .Max();
 
@@ -140,8 +142,7 @@ public class CariService : ICariService
                 Telefon      = c.Telefon,
                 Eposta       = c.Eposta,
                 Adres        = c.Adres,
-                AcilisBakiye = c.AcilisBakiye,
-                Aktif        = c.Aktif
+                AcilisBakiye = c.AcilisBakiye
             })
             .FirstOrDefaultAsync();
     }
@@ -173,7 +174,10 @@ public class CariService : ICariService
                       c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Alis).Sum(f => f.GenelToplam)
                     + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Tahsilat).Sum(i => i.Tutar),
 
-                HareketSayisi = c.CariIslemler.Count(i => i.Aktif) + c.Faturalar.Count(f => f.Aktif),
+                // Asagidaki liste yalnizca tahsilat/odeme gosteriyor; sayi da onunla
+                // ayni kumeyi saymali. Faturalar da sayilinca "10 hareketten 10'u"
+                // yazan ekran aslinda 24 hareketin 10'unu gosteriyordu.
+                HareketSayisi = c.CariIslemler.Count(i => i.Aktif),
 
                 SonHareketler = c.CariIslemler
                     .Where(i => i.Aktif)
@@ -247,7 +251,6 @@ public class CariService : ICariService
             mevcut.Eposta       = model.Eposta?.Trim();
             mevcut.Adres        = model.Adres?.Trim();
             mevcut.AcilisBakiye = model.AcilisBakiye;
-            mevcut.Aktif        = model.Aktif;
         }
 
         await _context.SaveChangesAsync();
@@ -314,6 +317,8 @@ public class CariService : ICariService
                 + c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Odeme).Sum(i => i.Tutar)
                 - c.Faturalar.Where(f => f.Aktif && f.FaturaTipi == FaturaTipi.Alis).Sum(f => f.GenelToplam)
                 - c.CariIslemler.Where(i => i.Aktif && i.IslemTipi == IslemTipi.Tahsilat).Sum(i => i.Tutar))
-            .FirstAsync();
+            // Olmayan bir cariId icin FirstAsync istisna atardi; bakiye sorusunun
+            // dogru cevabi bu durumda sifir.
+            .FirstOrDefaultAsync();
     }
 }
