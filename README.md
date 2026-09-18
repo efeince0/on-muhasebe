@@ -147,15 +147,15 @@ adında küçük, bağımlılıksız bir `ILoggerProvider` yazıldı:
 
 ## Şartname dokümanından bilinçli sapmalar
 
-| Konu | Dokümanda | Bu projede | Gerekçe |
+| Konu | Dokümanda | Bu projede | Gerekçe (özet) |
 |---|---|---|---|
-| Sayım miktarı | `Miktar > 0` | Sayım satırlarında negatif olabilir | Sayım düzeltmesi hem artırır hem azaltır; kullanıcı sayılan miktarı girer, fark hesaplanır. Check constraint sayımı istisna tutar. |
-| Satır tutarı | "Miktar × birim fiyat (+KDV)" | KDV hariç | Dokümanın kendi `AraToplam` tanımı ("KDV hariç satır toplamları") ancak böyle tutarlı olur. |
-| Vergi no | Tabloda kısıt yok | Filtreli benzersiz indeks | İş kuralları bölümü "vergi no benzersiz olmalıdır" diyor. SQL Server unique index'te NULL'ları eşit saydığı için boş olanlar filtre dışı bırakıldı. |
-| Pasife alma | "Pasife alınmalıdır" | Bakiye/stok engel değil, uyarı | Doküman pasife almayı çıkış yolu olarak tanımlıyor; engellemek o yolu kapatırdı. |
-| Son yönetici | "Son yönetici silinememelidir" | Rol değiştirme ve rol yetkisi de korunur | Rolü değiştirmek de o hesabı yönetici olmaktan çıkarır; kural rol adına değil `Kullanici.Guncelle` yetkisine bağlandı. |
-| Stok kategorisi | Tabloda "Liste" (sabit seçenekler) | Serbest metin + öneri listesi (`datalist`) | Doküman kategori için örnek bir liste vermiyor (sadece "ürün kategorisi/grubu" diyor); hangi kategorilerin var olacağı işletmeye göre değişir. Sabit bir enum yazmak yerine, mevcut kayıtlardan öneri listesi üretildi; serbest yazmak da mümkün. |
-| Stok birimi | Tabloda "Liste" (sabit seçenekler) | Seçim kutusu (8 yaygın birim: Adet/Kg/Litre/Metre/M2/Paket/Kutu/Koli) + "Diğer" ile serbest giriş | Doküman örnek değerler veriyor ("Adet / Kg / Litre / Kutu vb."); form artık gerçek bir `<select>` sunuyor, ama "vb." ifadesi listeyi kapalı görmediği için "Diğer" seçeneğiyle listede olmayan bir birim de girilebiliyor. Veritabanında hâlâ serbest metin (`nvarchar`) — enum olsaydı yeni bir birim eklemek yeniden derleme gerektirirdi. |
+| Sayım miktarı | `Miktar > 0` | Negatif olabilir | Sayım hem artırır hem azaltır; fark hesaplanır. |
+| Satır tutarı | Miktar × fiyat (+KDV) | KDV hariç | Dokümanın kendi `AraToplam` tanımıyla ("KDV hariç") tutarlı. |
+| Vergi no | Kısıt yok | Filtreli benzersiz indeks | "Benzersiz olmalı" kuralı var; boş olanlar çakışmasın diye filtrelendi. |
+| Pasife alma | "Pasife alınmalı" | Engel değil, uyarı | Doküman pasifi çıkış yolu sayıyor; engellemek o yolu kapatırdı. |
+| Son yönetici | "Silinememeli" | Rol değişimi de korunuyor | Rol değişimi de yöneticilikten çıkarır; kural yetkiye bağlandı. |
+| Stok kategorisi | "Liste" | Serbest metin + öneri | Doküman örnek liste vermiyor; kategori işletmeye göre değişir. |
+| Stok birimi | "Liste" | Seçim kutusu + "Diğer" | Doküman "vb." diyor, tam kapalı liste değil. |
 
 ---
 
@@ -165,6 +165,6 @@ Bu maddeler proje kapsamında bilerek çözülmedi. Gerçek bir kurulumda ele al
 
 | Konu | Durum | Neden şimdilik böyle |
 |---|---|---|
-| Yetki iptali | İzinler girişte bir kez çözülüp çerezde taşınır. Kullanıcının rolü veya yetkisi değişirse, mevcut oturum 8 saatlik çerez süresi dolana ya da kullanıcı çıkış yapana kadar eski yetkilerle çalışır. | Her istekte veritabanından yetki doğrulamak (`ValidatePrincipal`) çözer ama her sayfa açılışına bir sorgu ekler. Ekranlarda bu davranış yazıyor: yetki kaydedildiğinde "değişiklik yeniden giriş yapıldığında etkili olur" uyarısı çıkar. |
-| Eşzamanlılık | Stok yeterliliği ve "son yönetici" kontrolü okuma ile `SaveChanges` arasında başka bir isteğin araya girmesine karşı korunmuyor. İki eşzamanlı çıkış kaydı stoğu negatife düşürebilir. | Doğru çözüm satır sürümü (`rowversion`) veya `SERIALIZABLE` işlem düzeyi. Tek kullanıcılı ön muhasebe senaryosunda pratik bir etkisi yok, kapsam dışı bırakıldı. |
-| Otomatik test | Birim/entegrasyon testi yok; doğrulama elle yapıldı. | Zaman kısıtı. Test yazılacak olsa ilk sıra hesaplanan bakiye ve miktar formüllerinde olurdu: girdisi belli, çıktısı tek sayı. |
+| Yetki iptali | İzinler girişte çözülüp çerezde taşınır; rol/izin değişikliği oturum bitene kadar yansımaz. | Her istekte DB sorgusu maliyetli olurdu; ekranda "yeniden girişte etkili olur" uyarısı var. |
+| Eşzamanlılık | Stok/"son yönetici" kontrolü yarış durumuna karşı korunmuyor. | Gerçek çözüm `rowversion`/`SERIALIZABLE`; tek kullanıcılı senaryoda pratik etkisi yok. |
+| Otomatik test | Birim/entegrasyon testi yok, elle doğrulandı. | Zaman kısıtı; yazılsa ilk sırada bakiye/miktar formülleri olurdu. |
